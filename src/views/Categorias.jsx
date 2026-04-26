@@ -7,7 +7,8 @@ import ModalRegistroCategoria from '../components/categorias/ModalRegistroCatego
 import TarjetaCategoria from "../components/categorias/TarjetaCategoria";
 import ModalEdicionCategoria from "../components/categorias/ModalEdicionCategoria";
 import ModalEliminarCategoria from "../components/categorias/ModalEliminacionCategoria";
-
+import CuadroBusquedas from "../components/busquedas/CuadroBusquedas";
+import Paginacion from "../components/ordenamiento/Paginacion";
 
 const Categorias = () => {
     const [categorias, setCategorias] = useState([]);
@@ -224,9 +225,17 @@ const eliminarCategoria = async () => {
             </Row>
             <hr />
 
-            
+            <CuadroBusquedas
+                textoBusqueda={textoBusqueda}
+                manejarCambioBusqueda={manejarBusqueda}
+            />
 
-           
+            {textoBusqueda.trim() !== '' && categoriasFiltradas.length === 0 && (
+                <Alert variant="warning" className="mt-3">
+                    No se encontraron categorías que coincidan con la búsqueda.
+                </Alert>
+            )}
+
             <ModalRegistroCategoria
                 mostrarModal={mostrarModal}
                 setMostrarModal={setMostrarModal}
@@ -267,7 +276,7 @@ const eliminarCategoria = async () => {
                     {/* Vista Móvil */}
                     <div className="d-lg-none">
                         <TarjetaCategoria
-                            categorias={cargarCategorias}
+                            categorias={categoriasPaginadas}
                             abrirModalEdicion={abrirModalEdicion}
                             abrirModalEliminacion={abrirModalEliminacion}
                         />
@@ -286,7 +295,13 @@ const eliminarCategoria = async () => {
                 </>
             )}
 
-           
+            <Paginacion
+                registrosPorPagina={registrosPorPagina}
+                totalRegistros={categoriasFiltradas.length}
+                paginaActual={paginaActual}
+                establecerPaginaActual={establecerPaginaActual}
+                establecerRegistrosPorPagina={establecerRegistrosPorPagina}
+            />
         </Container>
     );
 };
