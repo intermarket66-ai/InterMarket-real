@@ -1,20 +1,22 @@
 import React from "react";
 import {Form, Button,Card, Alert} from "react-bootstrap"
+import logo from "../../assets/Logo_intermarket.png"
 
 const FormularioLogin =  ({usuario, contraseña, error, setUsuario, setContraseña, iniciarSesion}) =>{
     return (
-<Card style = {{ minWidth: "320px", maxWidth: "400px", width: "100%" }} className="p-4 shadow-lg">
+<Card style = {{minWidth: "320px", maxWidth: "400px", width: "100%" }} className="p-4 shadow-lg">
   <Card.Body>
-    <h3 className="text-center mb-4">Iniciar Sesión</h3>
+    <img style={{width: "24rem", marginTop: "-38px", marginLeft: "-40px"  }} src={logo} alt="Logo" />   
+    <h3 className=" mb-3">Login</h3>
 
     {error && <Alert variant="danger">{error}</Alert>}
 
     <Form>
       <Form.Group className="mb-3" controlId="usuario">
-        <Form.Label>Usuario</Form.Label>
+        
         <Form.Control
           type="text"
-          placeholder="Ingresa tu usuario"
+          placeholder="Usuario"
           value={usuario}
           onChange={(e) => setUsuario(e.target.value)}
           required
@@ -22,10 +24,10 @@ const FormularioLogin =  ({usuario, contraseña, error, setUsuario, setContrase�
       </Form.Group>
 
       <Form.Group className="mb-3" controlId="contrasena">
-        <Form.Label>Contraseña</Form.Label>
+      
         <Form.Control
           type="password"
-          placeholder="Ingresa tu contraseña"
+          placeholder="Contraseña"
           value={contraseña}
           onChange={(e) => setContraseña(e.target.value)}
           required

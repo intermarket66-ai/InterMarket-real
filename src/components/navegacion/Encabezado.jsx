@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Container, Nav, Navbar, Offcanvas } from "react-bootstrap";
-import logo from "../../assets/icono_intermarket-removebg-preview.png";
+import logo from "../../assets/icono_intermAeview.png";
 import { supabase } from "../../database/supabaseconfig";
 import "../../App.css";
 

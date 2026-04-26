@@ -52,7 +52,7 @@ useEffect(() => {
   };
 
   return (
-    <div style={estiloContenedor}>
+    <div className='contenedorlogin'>
       <FormularioLogin
         usuario={usuario}
         contraseña={contraseña}
