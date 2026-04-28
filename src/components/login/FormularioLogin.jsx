@@ -6,7 +6,7 @@ const FormularioLogin =  ({usuario, contrase√±a, error, setUsuario, setContrase√
     return (
 <Card style = {{minWidth: "320px", maxWidth: "400px", width: "100%" }} className="p-4 shadow-lg">
   <Card.Body>
-    <img style={{width: "24rem", marginTop: "-38px", marginLeft: "-40px"  }} src={logo} alt="Logo" />   
+    <img style={{width: "200px", display: "block", margin: "0 auto"  }} src={logo} alt="Logo" />   
     <h3 className=" mb-3">Login</h3>
 
     {error && <Alert variant="danger">{error}</Alert>}

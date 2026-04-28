@@ -75,13 +75,7 @@ const Encabezado = () => {
             <strong>Inicio</strong>
           </Nav.Link>
 
-          <Nav.Link
-            onClick={() => manejarNavegacion("/categorias")}
-            className={mostrarMenu ? "color-texto-marca" : "text-dark"}
-          >
-            {mostrarMenu ? <i className="bi-bookmark-fill me-2"></i> : null}
-            <strong>Categorías</strong>
-          </Nav.Link>
+          
 
           <Nav.Link
             onClick={() => manejarNavegacion("/productos")}
@@ -89,6 +83,14 @@ const Encabezado = () => {
           >
             {mostrarMenu ? <i className="bi-bag-heart-fill me-2"></i> : null}
             <strong>Productos</strong>
+          </Nav.Link>
+
+          <Nav.Link
+            onClick={() => manejarNavegacion("/vendedor")}
+            className={mostrarMenu ? "color-texto-marca" : "text-dark"}
+          >
+            {mostrarMenu ? <i className="bi-cash-coin me-2"></i> : null}
+            <strong>Ventas</strong>
           </Nav.Link>
 
           {/* Opción para ir al catálogo público desde admin */}
