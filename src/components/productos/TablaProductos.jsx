@@ -5,26 +5,56 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 const TablaProductos = ({
     productos = [],
     abrirModalEdicion,
-    abrirModalEliminacion
+    abrirModalEliminacion,
+    abrirModalDescuento
 }) => {
+    const obtenerInfoOferta = (producto) => {
+        const precioVenta = parseFloat(producto.precio_venta || 0);
+        const precioOriginal = parseFloat(
+            producto.precio_original ??
+            producto.precio_lista ??
+            producto.precio_regular ??
+            0
+        );
+
+        // Fallback: si no existe precio original, usa compra como referencia visual
+        const base = precioOriginal > 0 ? precioOriginal : parseFloat(producto.precio_compra || 0);
+        const esOferta = base > 0 && precioVenta > 0 && precioVenta < base;
+        const ahorro = esOferta ? base - precioVenta : 0;
+        const porcentaje = esOferta ? Math.round((ahorro / base) * 100) : 0;
+
+        return { esOferta, base, ahorro, porcentaje };
+    };
+
     return (
         <Table striped bordered hover responsive size="sm">
             <thead className="table-dark">
                 <tr>
-                    <th>ID</th>
+                    <th>Imagen</th>
                     <th>Nombre del Producto</th>
                     <th className="d-none d-lg-table-cell">Descripción</th>
                     <th>Categoría</th>
                     <th className="text-end">Precio Compra</th>
                     <th className="text-end">Precio Venta</th>
+                    <th className="text-center">Oferta</th>
                     <th className="text-center">Estado</th>
                     <th className="text-center">Acciones</th>
                 </tr>
             </thead>
             <tbody>
-                {productos.map((producto) => (
+                {productos.map((producto) => {
+                    const infoOferta = obtenerInfoOferta(producto);
+                    return (
                     <tr key={producto.id_producto}>
-                        <td>{producto.id_producto}</td>
+                        <td>
+                            {producto.url_imagenes && (
+                                <img 
+                                    src={producto.url_imagenes[0]} 
+                                    alt={producto.nombre_producto} 
+                                    style={{ width: '50px', height: '50px' }}
+                                />
+                            )}
+                        </td>
                         
                         <td className="fw-bold">
                             {producto.nombre_producto}
@@ -44,6 +74,17 @@ const TablaProductos = ({
                         
                         <td className="text-end fw-bold text-success">
                             ${parseFloat(producto.precio_venta || 0).toFixed(2)}
+                        </td>
+
+                        <td className="text-center">
+                            {infoOferta.esOferta ? (
+                                <div className="d-flex flex-column align-items-center">
+                                    <Badge bg="danger" className="mb-1">-{infoOferta.porcentaje}%</Badge>
+                                    <small className="text-success fw-semibold">Ahorra ${infoOferta.ahorro.toFixed(2)}</small>
+                                </div>
+                            ) : (
+                                <small className="text-muted">Sin oferta</small>
+                            )}
                         </td>
                         
                         <td className="text-center">
@@ -66,6 +107,15 @@ const TablaProductos = ({
                                 <i className="bi bi-pencil"></i>
                             </Button>
                             <Button
+                                variant="success"
+                                size="sm"
+                                className="m-1"
+                                onClick={() => abrirModalDescuento(producto)}
+                                title="Aplicar descuento"
+                            >
+                                <i className="bi bi-tag-fill me-1"></i> Descuento
+                            </Button>
+                            <Button
                                 variant="outline-danger"
                                 size="sm"
                                 className="m-1"
@@ -76,7 +126,7 @@ const TablaProductos = ({
                             </Button>
                         </td>
                     </tr>
-                ))}
+                )})}
             </tbody>
         </Table>
     );

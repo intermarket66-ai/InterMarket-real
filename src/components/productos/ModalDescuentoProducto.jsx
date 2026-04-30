@@ -31,8 +31,14 @@ const ModalDescuentoProducto = ({
     };
 
     const handleAplicarDescuento = async () => {
-        if (!descuento || parseFloat(descuento) <= 0) {
+        const valor = parseFloat(descuento);
+        if (!descuento || Number.isNaN(valor) || valor <= 0) {
             setError("Debe ingresar un valor de descuento mayor a 0");
+            return;
+        }
+
+        if (tipoDescuento === "porcentaje" && valor >= 100) {
+            setError("El porcentaje debe ser menor a 100.");
             return;
         }
 
@@ -40,12 +46,27 @@ const ModalDescuentoProducto = ({
         setDeshabilitado(true);
 
         const nuevoPrecio = calcularNuevoPrecio();
+        const precioMinimo = parseFloat(productoSeleccionado.precio_compra || 0);
 
-        await aplicarDescuento(productoSeleccionado, nuevoPrecio);
+        if (nuevoPrecio >= precioActual) {
+            setError("El nuevo precio debe ser menor al precio actual.");
+            setDeshabilitado(false);
+            return;
+        }
+
+        if (nuevoPrecio < precioMinimo) {
+            setError(`El nuevo precio no puede ser menor al precio de compra ($${precioMinimo.toFixed(2)}).`);
+            setDeshabilitado(false);
+            return;
+        }
+
+        const aplicado = await aplicarDescuento(productoSeleccionado, nuevoPrecio);
 
         setDeshabilitado(false);
-        setMostrarModal(false);
-        setDescuento("");
+        if (aplicado) {
+            setMostrarModal(false);
+            setDescuento("");
+        }
     };
 
     return (
@@ -59,6 +80,7 @@ const ModalDescuentoProducto = ({
                     <Col md={6}>
                         <p className="mb-1"><strong>Precio Actual:</strong></p>
                         <h4 className="text-success">${precioActual.toFixed(2)}</h4>
+                        <small className="text-muted">Precio minimo permitido: ${parseFloat(productoSeleccionado.precio_compra || 0).toFixed(2)}</small>
                     </Col>
                     <Col md={6}>
                         <p className="mb-1"><strong>Nuevo Precio:</strong></p>

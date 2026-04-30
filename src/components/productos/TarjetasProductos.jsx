@@ -1,16 +1,39 @@
 import React from 'react';
 import { Row, Col, Card, Button, Badge } from 'react-bootstrap';
 
-const TarjetasProductos = ({ productos, abrirModalEdicion, abrirModalEliminacion }) => {
+const TarjetasProductos = ({ productos, abrirModalEdicion, abrirModalEliminacion, abrirModalDescuento }) => {
+    const obtenerInfoOferta = (producto) => {
+        const precioVenta = parseFloat(producto.precio_venta || 0);
+        const precioOriginal = parseFloat(
+            producto.precio_original ??
+            producto.precio_lista ??
+            producto.precio_regular ??
+            0
+        );
+
+        const base = precioOriginal > 0 ? precioOriginal : parseFloat(producto.precio_compra || 0);
+        const esOferta = base > 0 && precioVenta > 0 && precioVenta < base;
+        const ahorro = esOferta ? base - precioVenta : 0;
+        const porcentaje = esOferta ? Math.round((ahorro / base) * 100) : 0;
+
+        return { esOferta, base, ahorro, porcentaje };
+    };
+
     return (
         <Row>
-            {productos.map((producto) => (
+            {productos.map((producto) => {
+                const imagenProducto = Array.isArray(producto.url_imagenes)
+                    ? producto.url_imagenes[0]
+                    : producto.url_imagenes;
+                const infoOferta = obtenerInfoOferta(producto);
+
+                return (
                 <Col key={producto.id_producto} xs={12} sm={6} md={4} lg={3} className="mb-4">
                     <Card className="h-100 shadow-sm">
-                        {producto.url_imagenes && (
+                        {imagenProducto && (
                             <Card.Img
                                 variant="top"
-                                src={producto.url_imagenes}
+                                src={imagenProducto}
                                 alt={producto.nombre_producto}
                                 style={{ height: '200px', objectFit: 'cover' }}
                                 onError={(e) => {
@@ -38,17 +61,32 @@ const TarjetasProductos = ({ productos, abrirModalEdicion, abrirModalEliminacion
                                 >
                                     {producto.id_estado === 1 ? 'Entregado' : 'Proceso'}
                                 </Badge>
+                                {infoOferta.esOferta && (
+                                    <Badge bg="danger" className="ms-2">
+                                        Oferta -{infoOferta.porcentaje}%
+                                    </Badge>
+                                )}
                             </div>
 
                             <div className="mt-auto">
                                 <div className="d-flex justify-content-between align-items-center mb-3">
                                     <div>
                                         <small className="text-muted">Venta:</small>
-                                        <div className="fw-bold text-success">${producto.precio_venta}</div>
+                                        <div className="fw-bold text-success">${parseFloat(producto.precio_venta || 0).toFixed(2)}</div>
+                                        {infoOferta.esOferta && (
+                                            <small className="text-muted text-decoration-line-through">
+                                                Antes: ${infoOferta.base.toFixed(2)}
+                                            </small>
+                                        )}
                                     </div>
                                     <div className="text-end">
                                         <small className="text-muted">Compra:</small>
-                                        <div className="fw-bold text-primary">${producto.precio_compra}</div>
+                                        <div className="fw-bold text-primary">${parseFloat(producto.precio_compra || 0).toFixed(2)}</div>
+                                        {infoOferta.esOferta && (
+                                            <small className="d-block text-success fw-semibold">
+                                                Ahorras ${infoOferta.ahorro.toFixed(2)}
+                                            </small>
+                                        )}
                                     </div>
                                 </div>
 
@@ -60,6 +98,14 @@ const TarjetasProductos = ({ productos, abrirModalEdicion, abrirModalEliminacion
                                         className="flex-fill"
                                     >
                                         <i className="bi bi-pencil"></i> Editar
+                                    </Button>
+                                    <Button
+                                        variant="outline-success"
+                                        size="sm"
+                                        onClick={() => abrirModalDescuento(producto)}
+                                        className="flex-fill"
+                                    >
+                                        <i className="bi bi-tag-fill"></i> Oferta
                                     </Button>
                                     <Button
                                         variant="outline-danger"
@@ -74,7 +120,7 @@ const TarjetasProductos = ({ productos, abrirModalEdicion, abrirModalEliminacion
                         </Card.Body>
                     </Card>
                 </Col>
-            ))}
+            )})}
         </Row>
     );
 };

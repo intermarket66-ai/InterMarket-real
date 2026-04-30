@@ -107,6 +107,7 @@ const categoriasPaginadas = categoriasFiltradas.slice(
 );
 
 
+
 const eliminarCategoria = async () => {
     if (!categoriaAEliminar) return;
     try {
@@ -139,6 +140,7 @@ const eliminarCategoria = async () => {
     }
 };
    
+
     const agregarCategoria = async () => {
         try {
             if (!nuevaCategoria.nombre_categoria.trim() || !nuevaCategoria.descripcion_categoria.trim()) {

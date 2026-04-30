@@ -86,11 +86,27 @@ const Encabezado = () => {
           </Nav.Link>
 
           <Nav.Link
+            onClick={() => manejarNavegacion("/tiendas")}
+            className={mostrarMenu ? "color-texto-marca" : "text-dark"}
+          >
+            {mostrarMenu ? <i className="bi bi-shop-window me-2"></i> : null}
+            <strong>Tiendas</strong>
+          </Nav.Link>
+
+          <Nav.Link
             onClick={() => manejarNavegacion("/vendedor")}
             className={mostrarMenu ? "color-texto-marca" : "text-dark"}
           >
             {mostrarMenu ? <i className="bi-cash-coin me-2"></i> : null}
             <strong>Ventas</strong>
+          </Nav.Link>
+
+          <Nav.Link
+            onClick={() => manejarNavegacion("/mensajes")}
+            className={mostrarMenu ? "color-texto-marca" : "text-dark"}
+          >
+            {mostrarMenu ? <i className="bi bi-chat-dots-fill me-2"></i> : null}
+            <strong>Mensajes</strong>
           </Nav.Link>
 
           {/* Opción para ir al catálogo público desde admin */}

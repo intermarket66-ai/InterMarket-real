@@ -28,7 +28,7 @@ function Login() {
       }
       if (data.user) {
         localStorage.setItem("usuario-supabase", usuario);
-        navegar("/");
+        navegar("/seleccion-rol");
       }
     } catch (err) {
       setError("Error de conexión con el servidor.");
@@ -38,7 +38,7 @@ function Login() {
   };
 
   useEffect(() => { 
-    if (localStorage.getItem("usuario-supabase")) navegar("/");
+    if (localStorage.getItem("usuario-supabase")) navegar("/seleccion-rol");
   }, [navegar]);
 
   return (

@@ -1,15 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Badge, Spinner, Button } from 'react-bootstrap';
+import { Container, Row, Col, Card, Badge, Spinner } from 'react-bootstrap';
 import { supabase } from '../database/supabaseconfig';
-import ModalDescuentoProducto from '../components/productos/ModalDescuentoProducto';
-import NotificacionOperacion from '../components/NotificacionOperacion';
 
 function Catalogo() {
     const [productos, setProductos] = useState([]);
     const [cargando, setCargando] = useState(true);
-    const [mostrarModalDescuento, setMostrarModalDescuento] = useState(false);
-    const [productoSeleccionado, setProductoSeleccionado] = useState(null);
-    const [toast, setToast] = useState({ mostrar: false, mensaje: '', tipo: '' });
 
     useEffect(() => {
         cargarProductos();
@@ -33,42 +28,6 @@ function Catalogo() {
             console.error("Error al cargar productos:", err);
         } finally {
             setCargando(false);
-        }
-    };
-
-    const abrirModalDescuento = (producto) => {
-        setProductoSeleccionado(producto);
-        setMostrarModalDescuento(true);
-    };
-
-    // Aplicar descuento actualizando precio_venta directamente
-    const aplicarDescuento = async (producto, nuevoPrecio) => {
-        try {
-            const { error } = await supabase
-                .from("productos")
-                .update({ 
-                    precio_venta: nuevoPrecio 
-                })
-                .eq("id_producto", producto.id_producto);
-
-            if (error) throw error;
-
-            setToast({
-                mostrar: true,
-                mensaje: `✓ Descuento aplicado. Nuevo precio: $${nuevoPrecio.toFixed(2)}`,
-                tipo: "exito"
-            });
-
-            // Recargar catálogo para mostrar el nuevo precio
-            cargarProductos();
-
-        } catch (err) {
-            console.error(err);
-            setToast({
-                mostrar: true,
-                mensaje: "Error al aplicar el descuento en la base de datos",
-                tipo: "error"
-            });
         }
     };
 
@@ -133,14 +92,6 @@ function Catalogo() {
                                             </div>
                                         </div>
 
-                                        <Button 
-                                            variant="success" 
-                                            className="w-100"
-                                            onClick={() => abrirModalDescuento(producto)}
-                                        >
-                                            <i className="bi bi-tag-fill me-1"></i>
-                                            Aplicar Descuento
-                                        </Button>
                                     </div>
                                 </Card.Body>
                             </Card>
@@ -148,22 +99,6 @@ function Catalogo() {
                     ))}
                 </Row>
             )}
-
-            {/* Modal */}
-            <ModalDescuentoProducto
-                mostrarModal={mostrarModalDescuento}
-                setMostrarModal={setMostrarModalDescuento}
-                productoSeleccionado={productoSeleccionado}
-                aplicarDescuento={aplicarDescuento}
-            />
-
-            {/* Notificación */}
-            <NotificacionOperacion
-                mostrar={toast.mostrar}
-                mensaje={toast.mensaje}
-                tipo={toast.tipo}
-                onCerrar={() => setToast({ ...toast, mostrar: false })}
-            />
 
             {!cargando && productos.length === 0 && (
                 <Row className="text-center my-5">
