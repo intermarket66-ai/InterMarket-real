@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Container, Nav, Navbar, Offcanvas } from "react-bootstrap";
 import logo from "../../assets/icono_intermAeview.png";
@@ -7,6 +7,7 @@ import "../../App.css";
 
 const Encabezado = () => {
   const [mostrarMenu, setMostrarMenu] = useState(false);
+  const [carritoCount, setCarritoCount] = useState(0);
   const navigate = useNavigate();
   const location = useLocation(); // Para detectar la ruta actual
 
@@ -16,6 +17,25 @@ const Encabezado = () => {
     navigate(ruta);
     setMostrarMenu(false);
   };
+
+  const actualizarCarritoCount = () => {
+    const carritoGuardado = JSON.parse(localStorage.getItem("carrito") || "[]");
+    const cantidad = carritoGuardado.reduce(
+      (total, item) => total + (item.cantidad || 0),
+      0
+    );
+    setCarritoCount(cantidad);
+  };
+
+  useEffect(() => {
+    actualizarCarritoCount();
+    window.addEventListener("storage", actualizarCarritoCount);
+    window.addEventListener("carritoActualizado", actualizarCarritoCount);
+    return () => {
+      window.removeEventListener("storage", actualizarCarritoCount);
+      window.removeEventListener("carritoActualizado", actualizarCarritoCount);
+    };
+  }, []);
 
   const cerrarSesion = async () => {
     try {
@@ -154,7 +174,7 @@ const Encabezado = () => {
   }
 
   return (
-    <Navbar className="color-navbar" bg="text-warning" expand="md" fixed="top" className="color-navbar shadow-lg" variant="dark">
+    <Navbar className="color-navbar shadow-lg" bg="text-warning" expand="md" fixed="top" variant="dark">
       <Container>
         <Navbar.Brand
           onClick={() => manejarNavegacion(esCatalogo ? "/catalogo" : "/")}
@@ -170,14 +190,39 @@ const Encabezado = () => {
             className="d-inline-block me-2"
           />
           <strong>
-            <h4 className="mb-0">InterMarket</h4>
+            <h4 className=  "mb-0">InterMarket</h4>
           </strong>
         </Navbar.Brand>
 
-        {/* Botón del menú */}
-        {!esLogin && (
-          <Navbar.Toggle aria-controls="menu-offcanvas" onClick={manejarToggle} />
-        )}
+       {/* Botón del Carrito - Modificado */}
+{!esLogin && (
+  <button
+    type="button"
+    className="btn btn-outline-primary btn-sm me-2 d-flex align-items-center carrito-navbar-btn"
+    onClick={() => {
+      // Si estamos en /catalogo, abrir el modal
+      if (location.pathname === "/catalogo") {
+        // Disparamos un evento que escuchará el componente Catalogo
+        window.dispatchEvent(new Event("abrirCarrito"));
+      } else {
+        // Si no estamos en catálogo, navegamos primero
+        navigate("/catalogo");
+        // Y después de navegar, abrimos el modal (con un pequeño delay)
+        setTimeout(() => {
+          window.dispatchEvent(new Event("abrirCarrito"));
+        }, 300);
+      }
+    }}
+  >
+    <i className="bi bi-cart-fill me-2"></i>
+    <span>Carrito</span>
+    {carritoCount > 0 && (
+      <span className="badge bg-danger rounded-pill ms-2">
+        {carritoCount}
+      </span>
+    )}
+  </button>
+)}
 
         {/* Menú lateral */}
         <Navbar.Offcanvas

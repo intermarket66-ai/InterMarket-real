@@ -118,6 +118,16 @@
     background: rgba(224, 247, 250, 0.55);
 }
 
+.carrito-navbar-btn {
+    min-width: 120px;
+    padding: 0.35rem 0.75rem;
+}
+
+.carrito-navbar-btn .badge {
+    font-size: 0.72rem;
+    padding: 0.35em 0.55em;
+}
+
 .color-texto-marca {
     color: #1A4B57 !important;
 }
