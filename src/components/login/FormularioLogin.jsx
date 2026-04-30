@@ -1,48 +1,56 @@
-import React from "react";
-import {Form, Button,Card, Alert} from "react-bootstrap"
-import logo from "../../assets/Logo_intermarket.png"
+import React, { useState } from 'react';
+import { Form, Button, Alert, InputGroup } from 'react-bootstrap';
 
-const FormularioLogin =  ({usuario, contraseña, error, setUsuario, setContraseña, iniciarSesion}) =>{
-    return (
-<Card style = {{minWidth: "320px", maxWidth: "400px", width: "100%" }} className="p-4 shadow-lg">
-  <Card.Body>
-    <img style={{width: "200px", display: "block", margin: "0 auto"  }} src={logo} alt="Logo" />   
-    <h3 className=" mb-3">Login</h3>
+const FormularioLogin = ({ usuario, contraseña, error, setUsuario, setContraseña, iniciarSesion, cargando }) => {
+  const [mostrarContraseña, setMostrarContraseña] = useState(false);
 
-    {error && <Alert variant="danger">{error}</Alert>}
-
-    <Form>
-      <Form.Group className="mb-3" controlId="usuario">
-        
-        <Form.Control
-          type="text"
-          placeholder="Usuario"
-          value={usuario}
-          onChange={(e) => setUsuario(e.target.value)}
-          required
-        />
-      </Form.Group>
-
-      <Form.Group className="mb-3" controlId="contrasena">
+  return (
+    <Form onSubmit={(e) => { e.preventDefault(); iniciarSesion(); }} className="mt-2">
+      {error && <Alert variant="danger" className="border-0 rounded-4 text-center small py-2 mb-3 shadow-sm">{error}</Alert>}
       
-        <Form.Control
-          type="password"
-          placeholder="Contraseña"
-          value={contraseña}
-          onChange={(e) => setContraseña(e.target.value)}
-          required
-        />
+      <Form.Group className="mb-3">
+        <InputGroup className="unique-input-group">
+          <InputGroup.Text>
+            <i className="bi bi-person-circle"></i>
+          </InputGroup.Text>
+          <Form.Control
+            type="text"
+            placeholder="Correo electrónico"
+            value={usuario}
+            onChange={(e) => setUsuario(e.target.value)}
+            required
+          />
+        </InputGroup>
       </Form.Group>
 
-      <Button variant="primary" className="w-100" onClick={iniciarSesion}>
-        Iniciar Sesión
+      <Form.Group className="mb-4">
+        <InputGroup className="unique-input-group">
+          <InputGroup.Text>
+            <i className="bi bi-shield-lock-fill"></i>
+          </InputGroup.Text>
+          <Form.Control
+            type={mostrarContraseña ? 'text' : 'password'}
+            placeholder="Contraseña"
+            value={contraseña}
+            onChange={(e) => setContraseña(e.target.value)}
+            required
+          />
+          <InputGroup.Text 
+            onClick={() => setMostrarContraseña(!mostrarContraseña)} 
+            className="cursor-pointer"
+          >
+            <i className={`bi ${mostrarContraseña ? 'bi-eye-slash' : 'bi-eye'}`}></i>
+          </InputGroup.Text>
+        </InputGroup>
+      </Form.Group>
+
+      <Button type="submit" className="unique-login-btn w-100 shadow" disabled={cargando}>
+        {cargando ? (
+          <><span className="spinner-border spinner-border-sm me-2"></span> Entrando...</>
+        ) : 'Iniciar Sesión'}
       </Button>
     </Form>
-  </Card.Body>
-</Card>
-
-    )
-}
-
+  );
+};
 
 export default FormularioLogin;
