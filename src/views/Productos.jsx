@@ -186,19 +186,24 @@ const Productos = () => {
             }
 
             const precioFinal = Math.round(nuevoPrecio * 100) / 100;
-            const { error } = await supabase
-                .from("productos")
-                .update({
-                    precio_venta: precioFinal
-                })
-                .eq("id_producto", producto.id_producto);
+            const precioOriginalExistente = Number(producto.precio_original || 0);
 
-            if (error) throw error;
+            setProductos((prev) =>
+                prev.map((item) =>
+                    item.id_producto === producto.id_producto
+                        ? {
+                            ...item,
+                            precio_venta: precioFinal,
+                            // Solo para cálculo visual de oferta en frontend.
+                            precio_original: precioOriginalExistente > 0 ? precioOriginalExistente : precioActual
+                        }
+                        : item
+                )
+            );
 
-            await cargarProductos();
             setToast({
                 mostrar: true,
-                mensaje: `Descuento aplicado. Nuevo precio: $${precioFinal.toFixed(2)}`,
+                mensaje: `Descuento aplicado temporalmente. Nuevo precio: $${precioFinal.toFixed(2)}`,
                 tipo: "exito"
             });
             return true;
@@ -353,6 +358,8 @@ const Productos = () => {
                     No se encontraron productos que coincidan con la búsqueda.
                 </Alert>
             )}
+
+           <br/> 
 
             {/* MODALES */}
             <ModalRegistroProducto

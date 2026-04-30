@@ -5,7 +5,7 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 const TablaTiendas = ({ tiendas = [], abrirModalEdicion, abrirModalEliminacion }) => {
     return (
         <Table striped bordered hover responsive size="sm">
-            <thead className="table-dark">
+            <thead className="table-blank">
                 <tr>
                     <th>Nombre de la Tienda</th>
                     <th className="text-center">Imagen</th>

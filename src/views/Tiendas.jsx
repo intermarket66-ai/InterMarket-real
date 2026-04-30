@@ -221,6 +221,8 @@ const Tiendas = () => {
                 </Alert>
             )}
 
+            <br/>
+
             <ModalRegistroTienda
                 mostrarModal={mostrarModalRegistro}
                 setMostrarModal={setMostrarModalRegistro}

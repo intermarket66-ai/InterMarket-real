@@ -28,7 +28,7 @@ const TablaProductos = ({
 
     return (
         <Table striped bordered hover responsive size="sm">
-            <thead className="table-dark">
+            <thead className="table-blank">
                 <tr>
                     <th>Imagen</th>
                     <th>Nombre del Producto</th>
