@@ -1,29 +1,30 @@
-import React, { useState } from 'react';
-import { Modal, Button, Form, Row, Col } from 'react-bootstrap';
+import React, { useState } from "react";
+import { Modal, Form, Button, Row, Col } from "react-bootstrap";
 
 const ModalEdicionProducto = ({
-    mostrarModal,
-    setMostrarModal,
+    mostrarModalEdicion,
+    setMostrarModalEdicion,
     productoEditar,
-    manejoCambioEdicion,
-    editarProducto,
+    manejoCambioInputEdicion,
+    manejoCambioArchivoActualizar,
+    actualizarProducto,
     categorias
 }) => {
-    const [desabilitado, setDesabilitado] = useState(false);
+    const [deshabilitado, setDeshabilitado] = useState(false);
 
-    const handleEditar = async () => {
-        if (desabilitado) return;
-        setDesabilitado(true);
-        await editarProducto();
-        setDesabilitado(false);
+    const handleActualizar = async () => {
+        if (deshabilitado) return;
+        setDeshabilitado(true);
+        await actualizarProducto();
+        setDeshabilitado(false);
     };
 
     if (!productoEditar) return null;
 
     return (
         <Modal
-            show={mostrarModal}
-            onHide={() => setMostrarModal(false)}
+            show={mostrarModalEdicion}
+            onHide={() => setMostrarModalEdicion(false)}
             backdrop="static"
             keyboard={false}
             centered
@@ -42,9 +43,8 @@ const ModalEdicionProducto = ({
                                 <Form.Control
                                     type="text"
                                     name="nombre_producto"
-                                    value={productoEditar.nombre_producto}
-                                    onChange={manejoCambioEdicion}
-                                    placeholder="Ingresa el nombre del producto"
+                                    value={productoEditar.nombre_producto || ''}
+                                    onChange={manejoCambioInputEdicion}
                                 />
                             </Form.Group>
                         </Col>
@@ -53,13 +53,13 @@ const ModalEdicionProducto = ({
                                 <Form.Label>Categoría *</Form.Label>
                                 <Form.Select
                                     name="categoria_id"
-                                    value={productoEditar.categoria_id}
-                                    onChange={manejoCambioEdicion}
+                                    value={productoEditar.categoria_id || ''}
+                                    onChange={manejoCambioInputEdicion}
                                 >
                                     <option value="">Selecciona una categoría</option>
-                                    {categorias.map((categoria) => (
-                                        <option key={categoria.id_categoria} value={categoria.id_categoria}>
-                                            {categoria.nombre_categoria}
+                                    {categorias.map((cat) => (
+                                        <option key={cat.id_categoria} value={cat.id_categoria}>
+                                            {cat.nombre_categoria}
                                         </option>
                                     ))}
                                 </Form.Select>
@@ -68,31 +68,17 @@ const ModalEdicionProducto = ({
                     </Row>
 
                     <Form.Group className="mb-3">
-                        <Form.Label>Descripción *</Form.Label>
+                        <Form.Label>Descripción</Form.Label>
                         <Form.Control
                             as="textarea"
                             rows={3}
                             name="descripcion"
-                            value={productoEditar.descripcion}
-                            onChange={manejoCambioEdicion}
-                            placeholder="Ingresa la descripción del producto"
+                            value={productoEditar.descripcion || ''}
+                            onChange={manejoCambioInputEdicion}
                         />
                     </Form.Group>
 
                     <Row>
-                        <Col md={6}>
-                            <Form.Group className="mb-3">
-                                <Form.Label>Precio de Venta *</Form.Label>
-                                <Form.Control
-                                    type="number"
-                                    step="0.01"
-                                    name="precio_venta"
-                                    value={productoEditar.precio_venta}
-                                    onChange={manejoCambioEdicion}
-                                    placeholder="0.00"
-                                />
-                            </Form.Group>
-                        </Col>
                         <Col md={6}>
                             <Form.Group className="mb-3">
                                 <Form.Label>Precio de Compra *</Form.Label>
@@ -100,9 +86,20 @@ const ModalEdicionProducto = ({
                                     type="number"
                                     step="0.01"
                                     name="precio_compra"
-                                    value={productoEditar.precio_compra}
-                                    onChange={manejoCambioEdicion}
-                                    placeholder="0.00"
+                                    value={productoEditar.precio_compra || ''}
+                                    onChange={manejoCambioInputEdicion}
+                                />
+                            </Form.Group>
+                        </Col>
+                        <Col md={6}>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Precio de Venta *</Form.Label>
+                                <Form.Control
+                                    type="number"
+                                    step="0.01"
+                                    name="precio_venta"
+                                    value={productoEditar.precio_venta || ''}
+                                    onChange={manejoCambioInputEdicion}
                                 />
                             </Form.Group>
                         </Col>
@@ -113,48 +110,50 @@ const ModalEdicionProducto = ({
                             <Form.Group className="mb-3">
                                 <Form.Label>Estado</Form.Label>
                                 <Form.Select
-                                    name="estado"
-                                    value={productoEditar.estado}
-                                    onChange={manejoCambioEdicion}
+                                    name="id_estado"
+                                    value={productoEditar.id_estado || '2'}
+                                    onChange={manejoCambioInputEdicion}
                                 >
-                                    <option value="activo">Activo</option>
-                                    <option value="inactivo">Inactivo</option>
+                                    <option value="1">Entregado</option>
+                                    <option value="2">Proceso</option>
                                 </Form.Select>
                             </Form.Group>
                         </Col>
                         <Col md={6}>
                             <Form.Group className="mb-3">
-                                <Form.Label>Imágenes (URL)</Form.Label>
+                                <Form.Label>Nueva Imagen (opcional)</Form.Label>
                                 <Form.Control
-                                    type="text"
-                                    name="imagenes"
-                                    value={productoEditar.imagenes}
-                                    onChange={manejoCambioEdicion}
-                                    placeholder="Ingresa la URL de la imagen"
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={manejoCambioArchivoActualizar}
                                 />
                             </Form.Group>
                         </Col>
                     </Row>
+
+                    {productoEditar.url_imagenes && (
+                        <div className="text-center mb-3">
+                            <p className="small text-muted">Imagen actual:</p>
+                            <img
+                                src={productoEditar.url_imagenes}
+                                alt="Vista previa"
+                                style={{ maxWidth: '100%', maxHeight: '220px', objectFit: 'contain' }}
+                            />
+                        </div>
+                    )}
                 </Form>
             </Modal.Body>
 
             <Modal.Footer>
-                <Button variant="secondary" onClick={() => setMostrarModal(false)}>
+                <Button variant="secondary" onClick={() => setMostrarModalEdicion(false)}>
                     Cancelar
                 </Button>
                 <Button
                     variant="primary"
-                    onClick={handleEditar}
-                    disabled={
-                        productoEditar.nombre_producto.trim() === "" ||
-                        productoEditar.descripcion.trim() === "" ||
-                        productoEditar.precio_venta === "" ||
-                        productoEditar.precio_compra === "" ||
-                        productoEditar.categoria_id === "" ||
-                        desabilitado
-                    }
+                    onClick={handleActualizar}
+                    disabled={deshabilitado}
                 >
-                    {desabilitado ? "Actualizando..." : "Actualizar"}
+                    {deshabilitado ? "Actualizando..." : "Actualizar Producto"}
                 </Button>
             </Modal.Footer>
         </Modal>

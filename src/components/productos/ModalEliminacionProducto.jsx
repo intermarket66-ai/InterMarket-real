@@ -7,13 +7,13 @@ const ModalEliminacionProducto = ({
     productoAEliminar,
     eliminarProducto
 }) => {
-    const [desabilitado, setDesabilitado] = useState(false);
+    const [deshabilitado, setDeshabilitado] = useState(false);
 
     const handleEliminar = async () => {
-        if (desabilitado) return;
-        setDesabilitado(true);
+        if (deshabilitado) return;
+        setDeshabilitado(true);
         await eliminarProducto();
-        setDesabilitado(false);
+        setDeshabilitado(false);
     };
 
     if (!productoAEliminar) return null;
@@ -42,9 +42,9 @@ const ModalEliminacionProducto = ({
                 <Button
                     variant="danger"
                     onClick={handleEliminar}
-                    disabled={desabilitado}
+                    disabled={deshabilitado}
                 >
-                    {desabilitado ? "Eliminando..." : "Eliminar"}
+                    {deshabilitado ? "Eliminando..." : "Eliminar"}
                 </Button>
             </Modal.Footer>
         </Modal>

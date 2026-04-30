@@ -1,21 +1,22 @@
-import React, { useState } from 'react';
-import { Modal, Button, Form, Row, Col } from 'react-bootstrap';
+import React, { useState } from "react";
+import { Modal, Form, Button, Row, Col } from "react-bootstrap";
 
 const ModalRegistroProducto = ({
     mostrarModal,
     setMostrarModal,
     nuevoProducto,
     manejoCambioInput,
+    manejoCambioArchivo,
     agregarProducto,
     categorias
 }) => {
-    const [desabilitado, setDesabilitado] = useState(false);
+    const [deshabilitado, setDeshabilitado] = useState(false);
 
-    const handleRegistrar = async () => {
-        if (desabilitado) return;
-        setDesabilitado(true);
+    const handleAgregar = async () => {
+        if (deshabilitado) return;
+        setDeshabilitado(true);
         await agregarProducto();
-        setDesabilitado(false);
+        setDeshabilitado(false);
     };
 
     return (
@@ -28,7 +29,7 @@ const ModalRegistroProducto = ({
             size="lg"
         >
             <Modal.Header closeButton>
-                <Modal.Title>Agregar Producto</Modal.Title>
+                <Modal.Title>Registrar Nuevo Producto</Modal.Title>
             </Modal.Header>
 
             <Modal.Body>
@@ -42,7 +43,7 @@ const ModalRegistroProducto = ({
                                     name="nombre_producto"
                                     value={nuevoProducto.nombre_producto}
                                     onChange={manejoCambioInput}
-                                    placeholder="Ingresa el nombre del producto"
+                                    placeholder="Ingrese el nombre del producto"
                                 />
                             </Form.Group>
                         </Col>
@@ -66,31 +67,18 @@ const ModalRegistroProducto = ({
                     </Row>
 
                     <Form.Group className="mb-3">
-                        <Form.Label>Descripción *</Form.Label>
+                        <Form.Label>Descripción</Form.Label>
                         <Form.Control
                             as="textarea"
                             rows={3}
                             name="descripcion"
                             value={nuevoProducto.descripcion}
                             onChange={manejoCambioInput}
-                            placeholder="Ingresa la descripción del producto"
+                            placeholder="Descripción del producto"
                         />
                     </Form.Group>
 
                     <Row>
-                        <Col md={6}>
-                            <Form.Group className="mb-3">
-                                <Form.Label>Precio de Venta *</Form.Label>
-                                <Form.Control
-                                    type="number"
-                                    step="0.01"
-                                    name="precio_venta"
-                                    value={nuevoProducto.precio_venta}
-                                    onChange={manejoCambioInput}
-                                    placeholder="0.00"
-                                />
-                            </Form.Group>
-                        </Col>
                         <Col md={6}>
                             <Form.Group className="mb-3">
                                 <Form.Label>Precio de Compra *</Form.Label>
@@ -100,7 +88,18 @@ const ModalRegistroProducto = ({
                                     name="precio_compra"
                                     value={nuevoProducto.precio_compra}
                                     onChange={manejoCambioInput}
-                                    placeholder="0.00"
+                                />
+                            </Form.Group>
+                        </Col>
+                        <Col md={6}>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Precio de Venta *</Form.Label>
+                                <Form.Control
+                                    type="number"
+                                    step="0.01"
+                                    name="precio_venta"
+                                    value={nuevoProducto.precio_venta}
+                                    onChange={manejoCambioInput}
                                 />
                             </Form.Group>
                         </Col>
@@ -111,28 +110,36 @@ const ModalRegistroProducto = ({
                             <Form.Group className="mb-3">
                                 <Form.Label>Estado</Form.Label>
                                 <Form.Select
-                                    name="estado"
-                                    value={nuevoProducto.estado}
+                                    name="id_estado"
+                                    value={nuevoProducto.id_estado}
                                     onChange={manejoCambioInput}
                                 >
-                                    <option value="activo">Activo</option>
-                                    <option value="inactivo">Inactivo</option>
+                                    <option value="1">Entregado</option>
+                                    <option value="2">Proceso</option>
                                 </Form.Select>
                             </Form.Group>
                         </Col>
                         <Col md={6}>
                             <Form.Group className="mb-3">
-                                <Form.Label>Imágenes (URL)</Form.Label>
+                                <Form.Label>Seleccionar Imagen</Form.Label>
                                 <Form.Control
-                                    type="text"
-                                    name="imagenes"
-                                    value={nuevoProducto.imagenes}
-                                    onChange={manejoCambioInput}
-                                    placeholder="Ingresa la URL de la imagen"
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={manejoCambioArchivo}
                                 />
                             </Form.Group>
                         </Col>
                     </Row>
+
+                    {nuevoProducto.url_imagenes && (
+                        <div className="text-center mb-3">
+                            <img
+                                src={nuevoProducto.url_imagenes}
+                                alt="Vista previa"
+                                style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain' }}
+                            />
+                        </div>
+                    )}
                 </Form>
             </Modal.Body>
 
@@ -142,17 +149,10 @@ const ModalRegistroProducto = ({
                 </Button>
                 <Button
                     variant="primary"
-                    onClick={handleRegistrar}
-                    disabled={
-                        nuevoProducto.nombre_producto.trim() === "" ||
-                        nuevoProducto.descripcion.trim() === "" ||
-                        nuevoProducto.precio_venta === "" ||
-                        nuevoProducto.precio_compra === "" ||
-                        nuevoProducto.categoria_id === "" ||
-                        desabilitado
-                    }
+                    onClick={handleAgregar}
+                    disabled={deshabilitado}
                 >
-                    {desabilitado ? "Guardando..." : "Guardar"}
+                    {deshabilitado ? "Guardando..." : "Guardar Producto"}
                 </Button>
             </Modal.Footer>
         </Modal>
