@@ -11,6 +11,7 @@ const ModalDescuentoProducto = ({
     const [tipoDescuento, setTipoDescuento] = useState("porcentaje");
     const [deshabilitado, setDeshabilitado] = useState(false);
     const [error, setError] = useState("");
+    
 
     if (!productoSeleccionado) return null;
 

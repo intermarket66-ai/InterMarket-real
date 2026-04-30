@@ -6,7 +6,8 @@ import ModalRegistroProducto from '../components/productos/ModalRegistroProducto
 import ModalEdicionProducto from '../components/productos/ModalEdicionProducto';
 import ModalEliminacionProducto from '../components/productos/ModalEliminacionProducto';
 import TarjetasProductos from '../components/productos/TarjetasProductos';
-import TablaProductos from '../components/productos/TablaProductos';   // ← Nueva tabla
+import TablaProductos from '../components/productos/TablaProductos';  
+import CuadroBusquedas from "../components/busquedas/CuadroBusquedas";
 
 const Productos = () => {
     const [productos, setProductos] = useState([]);
@@ -19,6 +20,10 @@ const Productos = () => {
     const [productoEditar, setProductoEditar] = useState(null);
     const [toast, setToast] = useState({ mostrar: false, mensaje: '', tipo: '' });
     const [vistaTabla, setVistaTabla] = useState(false);
+    
+    // Estados para búsqueda
+    const [textoBusqueda, setTextoBusqueda] = useState("");
+    const [busquedaDebounce, setBusquedaDebounce] = useState("");
 
     // Estado para nuevo producto
     const [nuevoProducto, setNuevoProducto] = useState({
@@ -28,10 +33,10 @@ const Productos = () => {
         precio_compra: '',
         categoria_id: '',
         url_imagenes: '',
-        id_estado: '2'   // Proceso por defecto
+        id_estado: '2'
     });
 
-    // Cargar productos
+    // ================== CARGAR DATOS ==================
     const cargarProductos = async () => {
         try {
             setCargando(true);
@@ -53,7 +58,6 @@ const Productos = () => {
         }
     };
 
-    // Cargar categorías
     const cargarCategorias = async () => {
         try {
             const { data, error } = await supabase
@@ -67,7 +71,35 @@ const Productos = () => {
         }
     };
 
-    // Convertir archivo a Base64
+    // ================== BÚSQUEDA CON DEBOUNCE ==================
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            setBusquedaDebounce(textoBusqueda);
+        }, 300);
+
+        return () => clearTimeout(timeout);
+    }, [textoBusqueda]);
+
+    // ================== FILTRADO DE PRODUCTOS ==================
+    const productosFiltrados = productos.filter((producto) => {
+        const busqueda = busquedaDebounce.toLowerCase().trim();
+        
+        if (!busqueda) return true; // Si no hay texto, mostrar todos
+
+        return (
+            producto.nombre_producto?.toLowerCase().includes(busqueda) ||
+            producto.descripcion?.toLowerCase().includes(busqueda) ||
+            producto.categorias?.nombre_categoria?.toLowerCase().includes(busqueda) ||
+            producto.precio_venta?.toString().includes(busqueda) ||
+            producto.precio_compra?.toString().includes(busqueda)
+        );
+    });
+
+    // ================== MANEJADORES ==================
+    const manejarCambioBusqueda = (e) => {
+        setTextoBusqueda(e.target.value);
+    };
+
     const convertirArchivoABase64 = (archivo) =>
         new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -127,7 +159,7 @@ const Productos = () => {
         setMostrarModalEliminacion(true);
     };
 
-    // ================== AGREGAR PRODUCTO ==================
+    // ================== CRUD ==================
     const agregarProducto = async () => {
         try {
             if (!nuevoProducto.nombre_producto?.trim() || 
@@ -179,7 +211,6 @@ const Productos = () => {
         }
     };
 
-    // ================== ACTUALIZAR PRODUCTO ==================
     const actualizarProducto = async () => {
         try {
             if (!productoEditar?.nombre_producto?.trim() || !productoEditar?.categoria_id) {
@@ -219,7 +250,6 @@ const Productos = () => {
         }
     };
 
-    // ================== ELIMINAR PRODUCTO ==================
     const eliminarProducto = async () => {
         try {
             const { error } = await supabase
@@ -243,6 +273,7 @@ const Productos = () => {
         }
     };
 
+    // Cargar datos al montar el componente
     useEffect(() => {
         cargarProductos();
         cargarCategorias();
@@ -280,6 +311,16 @@ const Productos = () => {
                     >
                         <i className="bi bi-table"></i> Tabla
                     </Button>
+                </Col>
+            </Row>
+
+            {/* Cuadro de Búsqueda */}
+            <Row className="mb-3">
+                <Col>
+                    <CuadroBusquedas 
+                        textoBusqueda={textoBusqueda} 
+                        manejarCambioBusqueda={manejarCambioBusqueda} 
+                    />
                 </Col>
             </Row>
 
@@ -331,26 +372,37 @@ const Productos = () => {
             )}
 
             {/* Vista Tarjetas */}
-            {!cargando && productos.length > 0 && !vistaTabla && (
+            {!cargando && productosFiltrados.length > 0 && !vistaTabla && (
                 <TarjetasProductos
-                    productos={productos}
+                    productos={productosFiltrados}
                     abrirModalEdicion={abrirModalEdicion}
                     abrirModalEliminacion={abrirModalEliminacion}
                 />
             )}
 
-            {/* Vista Tabla - NUEVA */}
-            {!cargando && productos.length > 0 && vistaTabla && (
+            {/* Vista Tabla */}
+            {!cargando && productosFiltrados.length > 0 && vistaTabla && (
                 <div className="table-responsive">
                     <TablaProductos
-                        productos={productos}
+                        productos={productosFiltrados}
                         abrirModalEdicion={abrirModalEdicion}
                         abrirModalEliminacion={abrirModalEliminacion}
                     />
                 </div>
             )}
 
-            {/* Sin productos */}
+            {/* Mensaje: No se encontraron resultados */}
+            {!cargando && productosFiltrados.length === 0 && productos.length > 0 && (
+                <Row className="text-center my-5">
+                    <Col>
+                        <p className="text-muted fs-5">
+                            No se encontraron productos que coincidan con "<strong>{textoBusqueda}</strong>"
+                        </p>
+                    </Col>
+                </Row>
+            )}
+
+            {/* Mensaje: No hay productos registrados */}
             {!cargando && productos.length === 0 && (
                 <Row className="text-center my-5">
                     <Col>
