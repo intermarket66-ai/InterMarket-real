@@ -1,320 +1,237 @@
 import React, { useState, useEffect } from "react";
-import { Container, Row, Col, Button, Spinner, Table } from "react-bootstrap";
+import { Container, Row, Col, Button, Spinner, Table, Badge, Card } from "react-bootstrap";
 import { supabase } from "../database/supabaseconfig";
-import NotificacionOperacion from '../components/NotificacionOperacion';
-import ModalEdicionVenta from '../components/ventas/ModalEdicionVenta';
-import ModalEliminacionVenta from '../components/ventas/ModalEliminacionVenta';
+import { useAuth } from "../context/AuthContext";
 
 const Vendedor = () => {
-  // Variables de estado
-  const [ventas, setVentas] = useState([]);
-  const [productos, setProductos] = useState([]);
+  const { user } = useAuth();
+  const [pedidos, setPedidos] = useState([]);
   const [cargando, setCargando] = useState(true);
-  const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false);
-  const [mostrarModalEliminacion, setMostrarModalEliminacion] = useState(false);
-  const [ventaAEliminar, setVentaAEliminar] = useState(null);
-  const [ventaEditar, setVentaEditar] = useState(null);
-  const [toast, setToast] = useState({ mostrar: false, mensaje: '', tipo: '' });
 
-  // Cargar ventas desde Supabase
-  const cargarVentas = async () => {
+  const cargarPedidos = async () => {
+    if (!user) return;
     try {
       setCargando(true);
-      const { data, error } = await supabase
-        .from("ventas")
-        .select(`
-          *,
-          productos (
-            nombre_producto
-          )
-        `)
-        .order("fecha_venta", { ascending: false });
-
-      if (error) {
-        console.error("Error al cargar ventas:", error.message);
-        setToast({
-          mostrar: true,
-          mensaje: "Error al cargar ventas.",
-          tipo: "error",
-        });
+      
+      // 1. Obtener la tienda del vendedor
+      const { data: perfil } = await supabase
+        .from('perfiles')
+        .select('id_tienda')
+        .eq('id_usuario', user.id)
+        .maybeSingle();
+        
+      if (!perfil?.id_tienda) {
+        setPedidos([]);
         return;
       }
-      setVentas(data || []);
+      
+      // 2. Obtener los pedidos asociados a los productos de su tienda
+      const { data, error } = await supabase
+        .from("pedidos")
+        .select(`
+          id_pedido,
+          creado_en,
+          precio_unitario,
+          id_estado,
+          productos!inner (nombre_producto, id_tienda),
+          perfiles ( usuarios ( username ) )
+        `)
+        .eq("productos.id_tienda", perfil.id_tienda)
+        .order("creado_en", { ascending: false });
+
+      if (error) throw error;
+      setPedidos(data || []);
     } catch (err) {
-      console.error("Excepción al cargar ventas:", err.message);
-      setToast({
-        mostrar: true,
-        mensaje: "Error inesperado al cargar ventas.",
-        tipo: "error",
-      });
+      console.error("Error al cargar pedidos:", err.message);
     } finally {
       setCargando(false);
     }
   };
 
-  // Cargar productos para referencia
-  const cargarProductos = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("productos")
-        .select("id, nombre_producto")
-        .order("nombre_producto", { ascending: true });
-
-      if (error) {
-        console.error("Error al cargar productos:", error.message);
-        return;
-      }
-      setProductos(data || []);
-    } catch (err) {
-      console.error("Excepción al cargar productos:", err.message);
-    }
-  };
-
-  // Editar venta
-  const editarVenta = async () => {
-    try {
-      if (
-        !ventaEditar.pedido_id.trim() ||
-        !ventaEditar.comprador_id.trim() ||
-        !ventaEditar.producto_id ||
-        !ventaEditar.monto_total ||
-        !ventaEditar.comision ||
-        !ventaEditar.monto_neto ||
-        !ventaEditar.fecha_venta
-      ) {
-        setToast({
-          mostrar: true,
-          mensaje: "Debe llenar todos los campos obligatorios.",
-          tipo: "advertencia",
-        });
-        return;
-      }
-
-      const ventaData = {
-        pedido_id: ventaEditar.pedido_id,
-        comprador_id: ventaEditar.comprador_id,
-        producto_id: parseInt(ventaEditar.producto_id),
-        monto_total: parseFloat(ventaEditar.monto_total),
-        comision: parseFloat(ventaEditar.comision),
-        monto_neto: parseFloat(ventaEditar.monto_neto),
-        estado: ventaEditar.estado,
-        metodo_pago: ventaEditar.metodo_pago,
-        numero_transaccion: ventaEditar.numero_transaccion || null,
-        fecha_venta: ventaEditar.fecha_venta,
-        fecha_entrega: ventaEditar.fecha_entrega || null,
-        comentarios: ventaEditar.comentarios || null
-      };
-
-      const { error } = await supabase
-        .from("ventas")
-        .update(ventaData)
-        .eq("pedido_id", ventaEditar.pedido_id);
-
-      if (error) {
-        console.error("Error al editar venta:", error.message);
-        setToast({
-          mostrar: true,
-          mensaje: "Error al actualizar venta.",
-          tipo: "error",
-        });
-        return;
-      }
-
-      // Éxito
-      setToast({
-        mostrar: true,
-        mensaje: `Venta "${ventaEditar.pedido_id}" actualizada exitosamente.`,
-        tipo: "exito",
-      });
-
-      setMostrarModalEdicion(false);
-      setVentaEditar(null);
-      cargarVentas();
-
-    } catch (err) {
-      console.error("Excepción al editar venta:", err.message);
-      setToast({
-        mostrar: true,
-        mensaje: "Error inesperado al actualizar venta.",
-        tipo: "error",
-      });
-    }
-  };
-
-  // Eliminar venta
-  const eliminarVenta = async () => {
-    try {
-      const { error } = await supabase
-        .from("ventas")
-        .delete()
-        .eq("pedido_id", ventaAEliminar.pedido_id);
-
-      if (error) {
-        console.error("Error al eliminar venta:", error.message);
-        setToast({
-          mostrar: true,
-          mensaje: "Error al eliminar venta.",
-          tipo: "error",
-        });
-        return;
-      }
-
-      // Éxito
-      setToast({
-        mostrar: true,
-        mensaje: `Venta "${ventaAEliminar.pedido_id}" eliminada exitosamente.`,
-        tipo: "exito",
-      });
-
-      setMostrarModalEliminacion(false);
-      setVentaAEliminar(null);
-      cargarVentas();
-
-    } catch (err) {
-      console.error("Excepción al eliminar venta:", err.message);
-      setToast({
-        mostrar: true,
-        mensaje: "Error inesperado al eliminar venta.",
-        tipo: "error",
-      });
-    }
-  };
-
-  // Métodos para control de apertura de modales
-  const abrirModalEdicion = (venta) => {
-    setVentaEditar({
-      pedido_id: venta.pedido_id,
-      comprador_id: venta.comprador_id,
-      producto_id: venta.producto_id,
-      monto_total: venta.monto_total,
-      comision: venta.comision,
-      monto_neto: venta.monto_neto,
-      estado: venta.estado,
-      metodo_pago: venta.metodo_pago,
-      numero_transaccion: venta.numero_transaccion || '',
-      fecha_venta: venta.fecha_venta,
-      fecha_entrega: venta.fecha_entrega || '',
-      comentarios: venta.comentarios || ''
-    });
-    setMostrarModalEdicion(true);
-  };
-
-  const abrirModalEliminacion = (venta) => {
-    setVentaAEliminar(venta);
-    setMostrarModalEliminacion(true);
-  };
-
-  // Manejo de cambios en inputs
-  const manejoCambioEdicion = (e) => {
-    const { name, value } = e.target;
-    setVentaEditar(prev => ({ ...prev, [name]: value }));
-  };
-
-  // Cargar datos al iniciar
   useEffect(() => {
-    cargarVentas();
-    cargarProductos();
-  }, []);
+    cargarPedidos();
+    
+    if (user) {
+      // Suscripción a cambios en la tabla pedidos
+      const channel = supabase
+        .channel('schema-db-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'pedidos'
+          },
+          (payload) => {
+            console.log('Cambio en pedidos:', payload);
+            cargarPedidos();
+          }
+        )
+        .subscribe();
+        
+      return () => {
+        supabase.removeChannel(channel);
+      }
+    }
+  }, [user]);
+
+  const cambiarEstadoPedido = async (id_pedido, nuevoEstadoId) => {
+    try {
+      const { error } = await supabase
+        .from("pedidos")
+        .update({ id_estado: nuevoEstadoId })
+        .eq("id_pedido", id_pedido);
+        
+      if (error) throw error;
+      cargarPedidos();
+    } catch (error) {
+      alert("Error al actualizar pedido");
+    }
+  };
+
+  const badgeColor = (id_estado) => {
+    switch(id_estado) {
+      case 1: return 'warning'; // Pendiente
+      case 2: return 'success'; // Pagado / Aceptado
+      case 3: return 'danger'; // Cancelado / Rechazado
+      case 4: return 'info'; // Entregado / Completado
+      default: return 'secondary';
+    }
+  };
+  
+  const getEstadoTexto = (id_estado) => {
+    switch(id_estado) {
+      case 1: return 'Pendiente';
+      case 2: return 'Pagado';
+      case 3: return 'Cancelado';
+      case 4: return 'Entregado';
+      default: return 'Desconocido';
+    }
+  };
 
   return (
     <Container>
       <br />
-      <Row>
+      <br />
+      <br />
+      <br />
+      <Row className="mb-4">
         <Col>
-          <h1>Ventas del Vendedor</h1>
+          <h2 className="text-primary"><i className="bi bi-speedometer2 me-2"></i>Dashboard Vendedor</h2>
         </Col>
       </Row>
-      <br />
 
-      {cargando ? (
-        <div className="text-center">
-          <Spinner animation="border" />
-          <p>Cargando ventas...</p>
-        </div>
-      ) : (
-        <Row>
-          <Col>
-            <Table striped bordered hover responsive>
-              <thead>
+      <Row className="mb-4">
+        <Col md={4}>
+          <Card className="text-center shadow-sm border-0">
+            <Card.Body>
+              <h5 className="text-muted">Total Pedidos</h5>
+              <h2 className="fw-bold">{pedidos.length}</h2>
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col md={4}>
+          <Card className="text-center shadow-sm border-0">
+            <Card.Body>
+              <h5 className="text-muted">Pedidos Pendientes</h5>
+              <h2 className="fw-bold text-warning">
+                {pedidos.filter(p => p.id_estado === 1).length}
+              </h2>
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col md={4}>
+          <Card className="text-center shadow-sm border-0 bg-primary text-white">
+            <Card.Body>
+              <h5 className="text-white-50">Ingresos Potenciales</h5>
+              <h2 className="fw-bold">
+                ${pedidos.filter(p => p.id_estado !== 3).reduce((acc, p) => acc + Number(p.precio_unitario), 0).toFixed(2)}
+              </h2>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+
+      <Card className="shadow-sm border-0 mb-5">
+        <Card.Header className="bg-white border-bottom-0 pt-4 pb-0">
+          <h4 className="m-0"><i className="bi bi-list-check me-2"></i>Gestión de Pedidos</h4>
+        </Card.Header>
+        <Card.Body>
+          {cargando ? (
+            <div className="text-center p-5">
+              <Spinner animation="border" variant="primary" />
+              <p className="mt-3 text-muted">Cargando pedidos...</p>
+            </div>
+          ) : pedidos.length === 0 ? (
+            <div className="text-center p-5 bg-light rounded">
+              <i className="bi bi-inbox text-muted" style={{ fontSize: '3rem' }}></i>
+              <p className="mt-3 text-muted">Aún no tienes pedidos asociados a tu tienda.</p>
+            </div>
+          ) : (
+            <Table responsive hover className="align-middle">
+              <thead className="table-light">
                 <tr>
-                  
+                  <th>ID Pedido</th>
+                  <th>Fecha</th>
                   <th>Producto</th>
                   <th>Comprador</th>
-                  <th>Monto Total</th>
-                  <th>Comisión</th>
-                  <th>Monto Neto</th>
+                  <th>Monto</th>
                   <th>Estado</th>
-                  <th>Método de Pago</th>
-                  <th>Número Transacción</th>
-                  <th>Fecha Venta</th>
-                  <th>Fecha Entrega</th>
-                  <th>Comentarios</th>
-                  <th>Acciones</th>
+                  <th className="text-center">Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {ventas.map((venta) => (
-                  <tr key={venta.pedido_id}>
-                   
-                    <td>{venta.productos?.nombre_producto}</td>
-                    <td>{venta.comprador_id}</td>
-                    <td>{venta.monto_total}</td>
-                    <td>{venta.comision}</td>
-                    <td>{venta.monto_neto}</td>
-                    <td>{venta.estado}</td>
-                    <td>{venta.metodo_pago}</td>
-                    <td>{venta.numero_transaccion}</td>
-                    <td>{venta.fecha_venta}</td>
-                    <td>{venta.fecha_entrega}</td>
-                    <td>{venta.comentarios}</td>
+                {pedidos.map((pedido) => (
+                  <tr key={pedido.id_pedido}>
+                    <td><small className="text-muted">{pedido.id_pedido.split('-')[0]}</small></td>
+                    <td>{new Date(pedido.creado_en).toLocaleDateString()}</td>
+                    <td>{pedido.productos?.nombre_producto}</td>
+                    <td>{pedido.perfiles?.usuarios?.username || 'Usuario'}</td>
+                    <td className="fw-bold text-success">${Number(pedido.precio_unitario).toFixed(2)}</td>
                     <td>
-                      <Button
-                        variant="outline-primary"
-                        size="sm"
-                        className="me-2"
-                        onClick={() => abrirModalEdicion(venta)}
-                      >
-                        <i className="bi bi-pencil"></i>
-                      </Button>
-                      <Button
-                        variant="outline-danger"
-                        size="sm"
-                        onClick={() => abrirModalEliminacion(venta)}
-                      >
-                        <i className="bi bi-trash"></i>
-                      </Button>
+                      <Badge bg={badgeColor(pedido.id_estado)} className="px-3 py-2 text-uppercase">
+                        {getEstadoTexto(pedido.id_estado)}
+                      </Badge>
+                    </td>
+                    <td className="text-center">
+                      {pedido.id_estado === 1 && (
+                        <>
+                          <Button 
+                            variant="success" 
+                            size="sm" 
+                            className="me-2 rounded-pill px-3"
+                            onClick={() => cambiarEstadoPedido(pedido.id_pedido, 2)}
+                          >
+                            <i className="bi bi-check-circle me-1"></i> Aceptar
+                          </Button>
+                          <Button 
+                            variant="danger" 
+                            size="sm"
+                            className="rounded-pill px-3"
+                            onClick={() => cambiarEstadoPedido(pedido.id_pedido, 3)}
+                          >
+                            <i className="bi bi-x-circle me-1"></i> Rechazar
+                          </Button>
+                        </>
+                      )}
+                      {pedido.id_estado === 2 && (
+                        <Button 
+                          variant="info" 
+                          size="sm" 
+                          className="rounded-pill px-3 text-white"
+                          onClick={() => cambiarEstadoPedido(pedido.id_pedido, 4)}
+                        >
+                          <i className="bi bi-box-seam me-1"></i> Marcar Entregado
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </Table>
-          </Col>
-        </Row>
-      )}
-
-      <NotificacionOperacion
-        mostrar={toast.mostrar}
-        mensaje={toast.mensaje}
-        tipo={toast.tipo}
-        onClose={() => setToast({ mostrar: false, mensaje: '', tipo: '' })}
-      />
-
-      {/* Modales */}
-      <ModalEdicionVenta
-        mostrarModal={mostrarModalEdicion}
-        setMostrarModal={setMostrarModalEdicion}
-        ventaEditar={ventaEditar}
-        manejoCambioEdicion={manejoCambioEdicion}
-        editarVenta={editarVenta}
-        productos={productos}
-      />
-
-      <ModalEliminacionVenta
-        mostrarModal={mostrarModalEliminacion}
-        setMostrarModal={setMostrarModalEliminacion}
-        ventaAEliminar={ventaAEliminar}
-        eliminarVenta={eliminarVenta}
-      />
+          )}
+        </Card.Body>
+      </Card>
     </Container>
   );
 };

@@ -21,7 +21,7 @@ const Perfil = () => {
         .from("perfiles")
         .select("*")
         .eq("id_usuario", user.id)
-        .single();
+        .maybeSingle();
       setPerfil(perfilData);
       setLoading(false);
     };

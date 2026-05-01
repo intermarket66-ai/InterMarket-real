@@ -47,9 +47,9 @@ const TablaProductos = ({
                     return (
                     <tr key={producto.id_producto}>
                         <td>
-                            {producto.url_imagenes && (
+                            {producto.imagen_url && producto.imagen_url.length > 0 && (
                                 <img 
-                                    src={producto.url_imagenes[0]} 
+                                    src={producto.imagen_url[0]} 
                                     alt={producto.nombre_producto} 
                                     style={{ width: '50px', height: '50px' }}
                                 />

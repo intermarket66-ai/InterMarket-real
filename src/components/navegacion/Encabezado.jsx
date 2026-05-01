@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Container, Nav, Navbar, Offcanvas } from "react-bootstrap";
 import logo from "../../assets/icono_intermAeview.png";
 import { supabase } from "../../database/supabaseconfig";
+import { useAuth } from "../../context/AuthContext";
 import "../../App.css";
 
 const Encabezado = () => {
@@ -10,6 +11,7 @@ const Encabezado = () => {
   const [carritoCount, setCarritoCount] = useState(0);
   const navigate = useNavigate();
   const location = useLocation(); // Para detectar la ruta actual
+  const { user, role, signOut } = useAuth();
 
   const manejarToggle = () => setMostrarMenu(!mostrarMenu);
 
@@ -39,10 +41,7 @@ const Encabezado = () => {
 
   const cerrarSesion = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-
-      localStorage.removeItem("usuario-supabase");
+      await signOut();
       setMostrarMenu(false);
       navigate("/login");
     } catch (error) {
@@ -52,9 +51,7 @@ const Encabezado = () => {
 
   // Detectar rutas especiales
   const esLogin = location.pathname === "/login";
-  const esCatalogo =
-    location.pathname === "/catalogo" &&
-    localStorage.getItem("usuario-supabase") === null;
+  const esCatalogo = location.pathname === "/catalogo" && !user;
 
   // Contenido del menú
   let contenidoMenu;
@@ -95,31 +92,47 @@ const Encabezado = () => {
             <strong>Inicio</strong>
           </Nav.Link>
 
-          
+          {/* Menú Vendedor */}
+          {role === 'vendedor' && (
+            <>
+              <Nav.Link
+                onClick={() => manejarNavegacion("/productos")}
+                className={mostrarMenu ? "color-texto-marca" : "text-dark"}
+              >
+                {mostrarMenu ? <i className="bi-box-seam me-2"></i> : null}
+                <strong>Mis Productos</strong>
+              </Nav.Link>
 
-          <Nav.Link
-            onClick={() => manejarNavegacion("/productos")}
-            className={mostrarMenu ? "color-texto-marca" : "text-dark"}
-          >
-            {mostrarMenu ? <i className="bi-bag-heart-fill me-2"></i> : null}
-            <strong>Productos</strong>
-          </Nav.Link>
+              <Nav.Link
+                onClick={() => manejarNavegacion("/tiendas")}
+                className={mostrarMenu ? "color-texto-marca" : "text-dark"}
+              >
+                {mostrarMenu ? <i className="bi bi-shop-window me-2"></i> : null}
+                <strong>Mi Tienda</strong>
+              </Nav.Link>
 
-          <Nav.Link
-            onClick={() => manejarNavegacion("/tiendas")}
-            className={mostrarMenu ? "color-texto-marca" : "text-dark"}
-          >
-            {mostrarMenu ? <i className="bi bi-shop-window me-2"></i> : null}
-            <strong>Tiendas</strong>
-          </Nav.Link>
+              <Nav.Link
+                onClick={() => manejarNavegacion("/vendedor")}
+                className={mostrarMenu ? "color-texto-marca" : "text-dark"}
+              >
+                {mostrarMenu ? <i className="bi-cash-coin me-2"></i> : null}
+                <strong>Ventas y Pedidos</strong>
+              </Nav.Link>
+            </>
+          )}
 
-          <Nav.Link
-            onClick={() => manejarNavegacion("/vendedor")}
-            className={mostrarMenu ? "color-texto-marca" : "text-dark"}
-          >
-            {mostrarMenu ? <i className="bi-cash-coin me-2"></i> : null}
-            <strong>Ventas</strong>
-          </Nav.Link>
+          {/* Menú Comprador */}
+          {role === 'comprador' && (
+            <>
+              <Nav.Link
+                onClick={() => manejarNavegacion("/catalogo")}
+                className={mostrarMenu ? "color-texto-marca" : "text-dark"}
+              >
+                {mostrarMenu ? <i className="bi-images me-2"></i> : null}
+                <strong>Catálogo</strong>
+              </Nav.Link>
+            </>
+          )}
 
           <Nav.Link
             onClick={() => manejarNavegacion("/mensajes")}
@@ -127,15 +140,6 @@ const Encabezado = () => {
           >
             {mostrarMenu ? <i className="bi bi-chat-dots-fill me-2"></i> : null}
             <strong>Mensajes</strong>
-          </Nav.Link>
-
-          {/* Opción para ir al catálogo público desde admin */}
-          <Nav.Link
-            onClick={() => manejarNavegacion("/catalogo")}
-            className={mostrarMenu ? "color-texto-marca" : "text-dark"}
-          >
-            {mostrarMenu ? <i className="bi-images me-2"></i> : null}
-            <strong>Catálogo</strong>
           </Nav.Link>
 
           <hr />
@@ -156,8 +160,8 @@ const Encabezado = () => {
         {mostrarMenu && (
           <div className="mt-3 p-3 rounded bg-light text-dark">
             <p className="mb-2">
-              <i className="bi-envelope-fill me-2"></i>
-              {localStorage.getItem("usuario-supabase")?.toLowerCase() || "Usuario"}
+              <i className="bi-person-badge-fill me-2"></i>
+              {user?.email || "Usuario"} ({role || "invitado"})
             </p>
 
             <button
@@ -194,8 +198,8 @@ const Encabezado = () => {
           </strong>
         </Navbar.Brand>
 
-       {/* Botón del Carrito - Modificado */}
-{!esLogin && (
+        {/* Botón del Carrito - Solo para compradores */}
+{!esLogin && role === 'comprador' && (
   <button
     type="button"
     className="btn btn-outline-primary btn-sm me-2 d-flex align-items-center carrito-navbar-btn"

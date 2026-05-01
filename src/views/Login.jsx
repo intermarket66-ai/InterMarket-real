@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Container, Card, Row, Col } from 'react-bootstrap';
 import FormularioLogin from '../components/login/FormularioLogin';
 import { supabase } from "../database/supabaseconfig";
+import { useAuth } from "../context/AuthContext";
 import logo from "../assets/icono_intermAeview.png"; // Tu logo actualizado
 import "../App.css";
 
@@ -12,6 +13,7 @@ function Login() {
   const [error, setError] = useState(null);
   const [cargando, setCargando] = useState(false);
   const navegar = useNavigate();
+  const { user } = useAuth();
 
   const iniciarSesion = async () => {
     try {
@@ -27,7 +29,8 @@ function Login() {
         return;
       }
       if (data.user) {
-        localStorage.setItem("usuario-supabase", usuario);
+        // Forzamos limpiar el rol anterior para que deba elegir de nuevo
+        localStorage.removeItem("rol-activo");
         navegar("/seleccion-rol");
       }
     } catch (err) {
@@ -38,8 +41,8 @@ function Login() {
   };
 
   useEffect(() => { 
-    if (localStorage.getItem("usuario-supabase")) navegar("/seleccion-rol");
-  }, [navegar]);
+    if (user) navegar("/seleccion-rol");
+  }, [user, navegar]);
 
   return (
     <div className="login-page-bg">
@@ -63,6 +66,12 @@ function Login() {
                   iniciarSesion={iniciarSesion}
                   cargando={cargando}
                 />
+
+                <div className="text-center mt-4">
+                  <small className="text-muted">
+                    ¿No tienes una cuenta? <span className="text-primary fw-bold" style={{cursor: 'pointer'}} onClick={() => navegar("/registro")}>Regístrate aquí</span>
+                  </small>
+                </div>
               </Card.Body>
             </Card>
           </Col>

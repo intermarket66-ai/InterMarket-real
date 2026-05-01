@@ -10,13 +10,16 @@ import TarjetasProductos from '../components/productos/TarjetasProductos';
 import TablaProductos from '../components/productos/TablaProductos';  
 import CuadroBusquedas from "../components/busquedas/CuadroBusquedas";
 import Paginacion from "../components/ordenamiento/Paginacion";
+import { useAuth } from '../context/AuthContext';
 
 const Productos = () => {
+    const { user } = useAuth();
     // --- ESTADOS DE DATOS ---
     const [productos, setProductos] = useState([]);
     const [categorias, setCategorias] = useState([]);
     const [cargando, setCargando] = useState(true);
     const [productosFiltrados, setProductosFiltrados] = useState([]);
+    const [idTienda, setIdTienda] = useState(null);
     
     // --- ESTADOS DE MODALES Y UI ---
     const [mostrarModalRegistro, setMostrarModalRegistro] = useState(false);
@@ -47,9 +50,23 @@ const Productos = () => {
     const cargarProductos = async () => {
         try {
             setCargando(true);
+            if (!user) return;
+            
+            // Buscar tienda del perfil
+            const { data: perfilData } = await supabase.from('perfiles').select('id_tienda').eq('id_usuario', user.id).maybeSingle();
+            const id_tienda_vendedor = perfilData?.id_tienda;
+            setIdTienda(id_tienda_vendedor);
+
+            if (!id_tienda_vendedor) {
+                setProductos([]);
+                setCargando(false);
+                return;
+            }
+
             const { data, error } = await supabase
                 .from("productos")
                 .select(`*, categorias (nombre_categoria)`)
+                .eq("id_tienda", id_tienda_vendedor)
                 .order("creado_en", { ascending: false });
 
             if (error) throw error;
@@ -146,7 +163,7 @@ const Productos = () => {
     const abrirModalEdicion = (producto) => {
         setProductoEditar({
             ...producto,
-            url_imagenes: Array.isArray(producto.url_imagenes) ? producto.url_imagenes[0] : (producto.url_imagenes || ''),
+            url_imagenes: Array.isArray(producto.imagen_url) ? producto.imagen_url[0] : (producto.imagen_url || ''),
             id_estado: producto.id_estado?.toString() || '2'
         });
         setMostrarModalEdicion(true);
@@ -243,7 +260,8 @@ const Productos = () => {
                 precio_compra: precioCompra,
                 categoria_id: categoriaId,
                 id_estado: Number.isInteger(idEstado) ? idEstado : 2,
-                url_imagenes: nuevoProducto.url_imagenes ? [nuevoProducto.url_imagenes] : null
+                imagen_url: nuevoProducto.url_imagenes ? [nuevoProducto.url_imagenes] : null,
+                id_tienda: idTienda
             };
 
             const { error } = await supabase.from("productos").insert([payload]);
@@ -287,7 +305,7 @@ const Productos = () => {
                 precio_compra: Number(productoEditar.precio_compra),
                 categoria_id: Number(productoEditar.categoria_id),
                 id_estado: Number(productoEditar.id_estado || 2),
-                url_imagenes: productoEditar.url_imagenes ? [productoEditar.url_imagenes] : null
+                imagen_url: productoEditar.url_imagenes ? [productoEditar.url_imagenes] : null
             };
 
             const { error } = await supabase

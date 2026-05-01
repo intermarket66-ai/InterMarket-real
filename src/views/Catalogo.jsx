@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Badge, Spinner, Button } from 'react-bootstrap';
+import { Container, Row, Col, Card, Badge, Spinner, Button, Form, InputGroup } from 'react-bootstrap';
 import { supabase } from '../database/supabaseconfig';
 import CarritoModal from '../components/catalogo/CarritoModal';
+import { useAuth } from '../context/AuthContext';
 
 function Catalogo() {
+    const { user } = useAuth();
     const [productos, setProductos] = useState([]);
     const [cargando, setCargando] = useState(true);
     const [carrito, setCarrito] = useState([]);
     const [mostrarCarrito, setMostrarCarrito] = useState(false);
+    const [busqueda, setBusqueda] = useState('');
 
     // Cargar productos y carrito + escuchar evento del encabezado
     useEffect(() => {
         cargarProductos();
-
+        
         const carritoGuardado = JSON.parse(localStorage.getItem('carrito') || '[]');
         setCarrito(carritoGuardado);
 
@@ -69,7 +72,6 @@ function Catalogo() {
         } else {
             nuevoCarrito = [...carrito, { ...producto, cantidad: 1 }];
         }
-
         setCarrito(nuevoCarrito);
         localStorage.setItem('carrito', JSON.stringify(nuevoCarrito));
 
@@ -100,21 +102,32 @@ function Catalogo() {
             <br />
 
             <Row className="mb-4 align-items-center">
-                <Col>
-                    <h1 className="text-center">
+                <Col md={4} xs={12} className="mb-3 mb-md-0">
+                    <h2 className="m-0 text-primary">
                         <i className="bi bi-shop me-2"></i>
-                        Catálogo de Productos
-                    </h1>
+                        Catálogo
+                    </h2>
                 </Col>
-                <Col xs="auto">
+                <Col md={5} xs={12} className="mb-3 mb-md-0">
+                    <InputGroup>
+                        <InputGroup.Text className="bg-white"><i className="bi bi-search"></i></InputGroup.Text>
+                        <Form.Control 
+                            placeholder="Buscar productos..." 
+                            value={busqueda} 
+                            onChange={(e) => setBusqueda(e.target.value)} 
+                        />
+                    </InputGroup>
+                </Col>
+                <Col md={3} xs={12} className="text-md-end">
                     <Button 
                         variant="primary" 
-                        size="lg"
+                        size="md"
+                        className="w-100 w-md-auto shadow-sm"
                         onClick={() => setMostrarCarrito(true)}
                         disabled={carrito.length === 0}
                     >
                         <i className="bi bi-cart-fill me-2"></i>
-                        Carrito ({carrito.length}) - ${totalCarrito.toFixed(2)}
+                        Ver Carrito ({carrito.length})
                     </Button>
                 </Col>
             </Row>
@@ -133,17 +146,27 @@ function Catalogo() {
                 </Row>
             ) : (
                 <Row>
-                    {productos.map((producto) => (
+                    {productos
+                        .filter(p => p.nombre_producto?.toLowerCase().includes(busqueda.toLowerCase()) || p.categorias?.nombre_categoria?.toLowerCase().includes(busqueda.toLowerCase()))
+                        .map((producto) => (
                         <Col key={producto.id_producto} xs={12} sm={6} md={4} lg={3} className="mb-4">
-                            <Card className="h-100 shadow-sm">
-                                {producto.url_imagenes ? (
-                                    <Card.Img
-                                        variant="top"
-                                        src={producto.url_imagenes}
-                                        alt={producto.nombre_producto}
-                                        style={{ height: '200px', objectFit: 'cover' }}
-                                        onError={(e) => e.target.src = 'https://via.placeholder.com/200x200?text=Sin+Imagen'}
-                                    />
+                            <Card className="h-100 shadow-sm border-0 product-card-hover">
+                                {producto.imagen_url && producto.imagen_url.length > 0 ? (
+                                    <div className="position-relative overflow-hidden" style={{ height: '200px' }}>
+                                        <Card.Img
+                                            variant="top"
+                                            src={producto.imagen_url[0]}
+                                            alt={producto.nombre_producto}
+                                            className="w-100 h-100"
+                                            style={{ objectFit: 'cover' }}
+                                            onError={(e) => e.target.src = 'https://via.placeholder.com/200x200?text=Sin+Imagen'}
+                                        />
+                                        {producto.precio_original > producto.precio_venta && (
+                                            <Badge bg="danger" className="position-absolute top-0 end-0 m-2 px-2 py-1 shadow-sm">
+                                                ¡Oferta!
+                                            </Badge>
+                                        )}
+                                    </div>
                                 ) : (
                                     <div className="bg-light d-flex align-items-center justify-content-center" style={{ height: '200px' }}>
                                         <i className="bi bi-image text-muted" style={{ fontSize: '3rem' }}></i>
@@ -151,40 +174,40 @@ function Catalogo() {
                                 )}
 
                                 <Card.Body className="d-flex flex-column">
-                                    <Card.Title className="text-truncate" title={producto.nombre_producto}>
+                                    <Card.Title className="text-truncate fw-bold mb-1" title={producto.nombre_producto}>
                                         {producto.nombre_producto}
                                     </Card.Title>
 
-                                    <Card.Text className="text-muted small mb-3">
-                                        {producto.descripcion?.length > 85 
-                                            ? `${producto.descripcion.substring(0, 85)}...` 
-                                            : producto.descripcion || 'Sin descripción'}
-                                    </Card.Text>
-
-                                    <div className="mb-3">
-                                        <Badge bg="secondary" className="me-2">
+                                    <div className="mb-2">
+                                        <Badge bg="light" text="dark" className="me-2 border">
                                             {producto.categorias?.nombre_categoria || 'Sin categoría'}
-                                        </Badge>
-                                        <Badge bg={producto.id_estado === 1 ? "success" : "warning"}>
-                                            {producto.id_estado === 1 ? "Entregado" : "Proceso"}
                                         </Badge>
                                     </div>
 
+                                    <Card.Text className="text-muted small mb-3 flex-grow-1">
+                                        {producto.descripcion?.length > 70 
+                                            ? `${producto.descripcion.substring(0, 70)}...` 
+                                            : producto.descripcion || 'Sin descripción'}
+                                    </Card.Text>
+
                                     <div className="mt-auto">
-                                        <div className="mb-3">
-                                            <small className="text-muted">Precio:</small>
-                                            <div className="fw-bold fs-4 text-success">
-                                                ${parseFloat(producto.precio_venta || 0).toFixed(2)}
-                                            </div>
+                                        <div className="mb-3 bg-light p-2 rounded text-center">
+                                            {producto.precio_original > producto.precio_venta ? (
+                                                <>
+                                                    <span className="text-decoration-line-through text-muted small me-2">${parseFloat(producto.precio_original).toFixed(2)}</span>
+                                                    <span className="fw-bold fs-4 text-danger">${parseFloat(producto.precio_venta || 0).toFixed(2)}</span>
+                                                </>
+                                            ) : (
+                                                <span className="fw-bold fs-4 text-success">${parseFloat(producto.precio_venta || 0).toFixed(2)}</span>
+                                            )}
                                         </div>
 
                                         <Button 
-                                            variant="success" 
-                                            className="w-100"
+                                            variant="outline-primary" 
+                                            className="w-100 fw-bold rounded-pill"
                                             onClick={() => agregarAlCarrito(producto)}
                                         >
-                                            <i className="bi bi-cart-plus me-1"></i>
-                                            Añadir al Carrito
+                                            <i className="bi bi-cart-plus me-2"></i>Añadir
                                         </Button>
                                     </div>
                                 </Card.Body>

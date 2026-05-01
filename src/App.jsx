@@ -6,6 +6,7 @@ import Inicio from "./views/Inicio";
 import Catalogo from "./views/Catalogo";
 import Categorias from "./views/Categorias";
 import Login from "./views/Login";
+import Registro from "./views/Registro";
 import RutaProtegida from "./components/rutas/RutaProtegida";
 import Productos from "./views/Productos";
 import Tiendas from "./views/Tiendas";
@@ -30,17 +31,27 @@ const AppLayout = () => {
       <main className={mostrarEncabezado ? "margen-superior-main" : ""}>
         <Routes>
           <Route path="/login" element={<Login/>} />
+          <Route path="/registro" element={<Registro/>} />
+          
+          {/* Ruta Inicio redirige según el rol */}
+          <Route path="/" element={<RutaProtegida><Inicio/></RutaProtegida>} />
+          
+          {/* Selección de vista/rol */}
           <Route path="/seleccion-rol" element={<RutaProtegida><VistaRol /></RutaProtegida>} />
           
-          <Route path="/" element={<RutaProtegida><Inicio/></RutaProtegida>} />
-          <Route path="/categorias" element={<RutaProtegida><Categorias /></RutaProtegida>} />
+          {/* Rutas compartidas o públicas */}
           <Route path="/catalogo" element={<Catalogo />} />
-          <Route path="/productos" element={<RutaProtegida><Productos /></RutaProtegida>} />
-          <Route path="/tiendas" element={<RutaProtegida><Tiendas /></RutaProtegida>} />
-          <Route path="/vendedor" element={<RutaProtegida><Vendedor /></RutaProtegida>} />
-          <Route path="/admin-inicio" element={<RutaProtegida><AdminInicio /></RutaProtegida>} />
           <Route path="/perfil" element={<RutaProtegida><Perfil /></RutaProtegida>} />
           <Route path="/mensajes" element={<RutaProtegida><Mensajes /></RutaProtegida>} />
+          
+          {/* Rutas de Vendedor */}
+          <Route path="/productos" element={<RutaProtegida rolesPermitidos={['vendedor']}><Productos /></RutaProtegida>} />
+          <Route path="/tiendas" element={<RutaProtegida rolesPermitidos={['vendedor']}><Tiendas /></RutaProtegida>} />
+          <Route path="/vendedor" element={<RutaProtegida rolesPermitidos={['vendedor']}><Vendedor /></RutaProtegida>} />
+          
+          {/* Rutas de Administrador (si aplica, asumo que se mantiene por el momento) */}
+          <Route path="/admin-inicio" element={<RutaProtegida><AdminInicio /></RutaProtegida>} />
+          <Route path="/categorias" element={<RutaProtegida><Categorias /></RutaProtegida>} />
           
           <Route path="*" element={<Pagina404 />} />
         </Routes>

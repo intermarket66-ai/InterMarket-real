@@ -1,20 +1,19 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "../database/supabaseconfig";
+import { useAuth } from "../context/AuthContext";
 import "../App.css";
 
 const VistaRol = () => {
   const navigate = useNavigate();
+  const { changeRole, signOut } = useAuth();
 
   const handleRoleSelection = (rol) => {
-    localStorage.setItem("rol-activo", rol);
-    navigate(rol === "vendedor" ? "/admin-inicio" : "/");
+    changeRole(rol);
+    navigate(rol === "vendedor" ? "/vendedor" : "/catalogo");
   };
 
   const cerrarSesion = async () => {
-    await supabase.auth.signOut();
-    localStorage.removeItem("usuario-supabase");
-    localStorage.removeItem("rol-activo");
+    await signOut();
     navigate("/login", { replace: true });
   };
 

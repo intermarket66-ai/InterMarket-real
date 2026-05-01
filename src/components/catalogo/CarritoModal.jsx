@@ -1,7 +1,11 @@
-import React from 'react';
-import { Modal, Button, Row, Col, Badge } from 'react-bootstrap';
+import React, { useState } from 'react';
+import { Modal, Button, Row, Col, Badge, Spinner } from 'react-bootstrap';
+import { supabase } from '../../database/supabaseconfig';
+import { useAuth } from '../../context/AuthContext';
 
 const CarritoModal = ({ mostrar, setMostrar, carrito, setCarrito, total }) => {
+    const { user } = useAuth();
+    const [procesando, setProcesando] = useState(false);
 
     const actualizarCantidad = (id_producto, nuevaCantidad) => {
         if (nuevaCantidad < 1) return;
@@ -29,10 +33,52 @@ const CarritoModal = ({ mostrar, setMostrar, carrito, setCarrito, total }) => {
         window.dispatchEvent(new Event('carritoActualizado'));
     };
 
-    const realizarCompra = () => {
-        alert("¡Compra realizada con éxito! (Esta funcionalidad se completará más adelante)");
-        vaciarCarrito();
-        setMostrar(false);
+    const realizarCompra = async () => {
+        if (!user) {
+            alert("Debes iniciar sesión como comprador para realizar una compra.");
+            return;
+        }
+        
+        try {
+            setProcesando(true);
+            
+            // Obtener el perfil del comprador
+            const { data: perfilData } = await supabase.from('perfiles').select('perfil_id').eq('id_usuario', user.id).maybeSingle();
+            const perfilId = perfilData?.perfil_id;
+            
+            if (!perfilId) throw new Error("Perfil de comprador no encontrado.");
+            
+            // 1. Crear Venta principal
+            const { data: venta, error: ventaError } = await supabase.from('ventas').insert({
+                id_usuario: user.id,
+                monto_total: total,
+                id_estado: 1 // Pendiente
+            }).select().single();
+            
+            if (ventaError) throw ventaError;
+            
+            // 2. Insertar Pedidos (Order items)
+            const pedidos = carrito.map(item => ({
+                perfil_id: perfilId,
+                venta_id: venta.venta_id,
+                producto_id: item.id_producto,
+                id_estado: 1, // Pendiente
+                precio_unitario: item.precio_venta
+                // El vendedor recibe la info mediante el producto_id -> id_tienda -> perfiles(vendedor)
+            }));
+            
+            await supabase.from('pedidos').insert(pedidos);
+            
+            vaciarCarrito();
+            alert("¡Compra enviada a los vendedores! Revisa tus pedidos.");
+            setMostrar(false);
+            
+        } catch (err) {
+            console.error("Error al procesar compra:", err);
+            alert("Ocurrió un error al procesar tu compra.");
+        } finally {
+            setProcesando(false);
+        }
     };
 
     return (
@@ -54,9 +100,9 @@ const CarritoModal = ({ mostrar, setMostrar, carrito, setCarrito, total }) => {
                         {carrito.map((item) => (
                             <Row key={item.id_producto} className="mb-3 align-items-center border-bottom pb-3">
                                 <Col xs={3}>
-                                    {item.url_imagenes && (
+                                    {item.imagen_url && item.imagen_url.length > 0 && (
                                         <img 
-                                            src={item.url_imagenes} 
+                                            src={item.imagen_url[0]} 
                                             alt={item.nombre_producto}
                                             style={{ width: '70px', height: '70px', objectFit: 'cover', borderRadius: '8px' }}
                                         />
@@ -122,12 +168,15 @@ const CarritoModal = ({ mostrar, setMostrar, carrito, setCarrito, total }) => {
                 </Button>
                 {carrito.length > 0 && (
                     <>
-                        <Button variant="outline-danger" onClick={vaciarCarrito}>
+                        <Button variant="outline-danger" onClick={vaciarCarrito} disabled={procesando}>
                             Vaciar Carrito
                         </Button>
-                        <Button variant="success" onClick={realizarCompra}>
-                            <i className="bi bi-credit-card me-2"></i>
-                            Realizar Compra
+                        <Button variant="success" onClick={realizarCompra} disabled={procesando}>
+                            {procesando ? (
+                                <><Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />Procesando...</>
+                            ) : (
+                                <><i className="bi bi-credit-card me-2"></i>Realizar Compra</>
+                            )}
                         </Button>
                     </>
                 )}

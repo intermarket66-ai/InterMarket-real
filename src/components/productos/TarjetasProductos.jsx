@@ -22,9 +22,9 @@ const TarjetasProductos = ({ productos, abrirModalEdicion, abrirModalEliminacion
     return (
         <Row>
             {productos.map((producto) => {
-                const imagenProducto = Array.isArray(producto.url_imagenes)
-                    ? producto.url_imagenes[0]
-                    : producto.url_imagenes;
+                const imagenProducto = Array.isArray(producto.imagen_url)
+                    ? producto.imagen_url[0]
+                    : producto.imagen_url;
                 const infoOferta = obtenerInfoOferta(producto);
 
                 return (
