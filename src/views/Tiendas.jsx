@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Container, Row, Col, Button, Spinner, Alert } from "react-bootstrap";
 import { supabase } from "../database/supabaseconfig";
+import { useAuth } from "../context/AuthContext";
 import NotificacionOperacion from "../components/NotificacionOperacion";
 import ModalRegistroTienda from "../components/tiendas/ModalRegistroTienda";
 import ModalEdicionTienda from "../components/tiendas/ModalEdicionTienda";
@@ -11,6 +12,7 @@ import CuadroBusquedas from "../components/busquedas/CuadroBusquedas";
 import Paginacion from "../components/ordenamiento/Paginacion";
 
 const Tiendas = () => {
+    const { user } = useAuth();
     const [tiendas, setTiendas] = useState([]);
     const [cargando, setCargando] = useState(true);
     const [tiendasFiltradas, setTiendasFiltradas] = useState([]);
@@ -136,8 +138,25 @@ const Tiendas = () => {
                 imagen_url: nuevaTienda.imagen_url || null
             };
 
-            const { error } = await supabase.from("tiendas").insert([payload]);
+            // 1. Crear la tienda y obtener el id_tienda generado
+            const { data, error } = await supabase.from("tiendas").insert([payload]).select().single();
             if (error) throw error;
+
+            // 2. Vincular la tienda al perfil del usuario
+            if (user) {
+                const { error: perfilError } = await supabase
+                    .from("perfiles")
+                    .update({ id_tienda: data.id_tienda })
+                    .eq("id_usuario", user.id);
+                
+                if (perfilError) console.error("Error al vincular perfil:", perfilError.message);
+                
+                // Actualizar el rol a vendedor
+                await supabase
+                    .from("usuarios")
+                    .update({ rol: 'vendedor' })
+                    .eq("id_usuario", user.id);
+            }
 
             await cargarTiendas();
             setMostrarModalRegistro(false);
