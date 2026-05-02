@@ -4,7 +4,7 @@ import { supabase } from '../../database/supabaseconfig';
 import { useAuth } from '../../context/AuthContext';
 import { enviarNotificacionPorCorreo } from '../../services/emailService';
 
-const CarritoModal = ({ mostrar, setMostrar, carrito, setCarrito, total }) => {
+const CarritoModal = ({ mostrar, setMostrar, carrito, setCarrito, total, onCompraExitosa }) => {
     const { user } = useAuth();
     const [procesando, setProcesando] = useState(false);
 
@@ -96,9 +96,10 @@ const CarritoModal = ({ mostrar, setMostrar, carrito, setCarrito, total }) => {
                 }
             }
             
+            const itemsComprados = [...carrito];
             vaciarCarrito();
-            alert("¡Compra enviada a los vendedores! Revisa tus pedidos.");
             setMostrar(false);
+            if (onCompraExitosa) onCompraExitosa(itemsComprados);
             
         } catch (err) {
             console.error("Error al procesar compra:", err);

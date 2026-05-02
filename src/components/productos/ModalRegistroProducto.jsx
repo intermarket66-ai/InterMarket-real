@@ -121,12 +121,16 @@ const ModalRegistroProducto = ({
                         </Col>
                         <Col md={6}>
                             <Form.Group className="mb-3">
-                                <Form.Label>Seleccionar Imagen</Form.Label>
+                                <Form.Label>Seleccionar Imágenes (varias)</Form.Label>
                                 <Form.Control
                                     type="file"
                                     accept="image/*"
+                                    multiple
                                     onChange={manejoCambioArchivo}
                                 />
+                                <Form.Text className="text-muted small">
+                                    Puedes seleccionar varias imágenes a la vez.
+                                </Form.Text>
                             </Form.Group>
                         </Col>
                     </Row>

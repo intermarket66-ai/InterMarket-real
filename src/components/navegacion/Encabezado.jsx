@@ -19,29 +19,29 @@ const Encabezado = () => {
   // Cargar notificaciones
   useEffect(() => {
     if (!user) return;
-    
+
     let perfilId;
-    
+
     const cargarNotificaciones = async () => {
       const { data: perfilData } = await supabase.from('perfiles').select('perfil_id').eq('id_usuario', user.id).maybeSingle();
       if (!perfilData) return;
       perfilId = perfilData.perfil_id;
-      
+
       const { data } = await supabase
         .from('notificaciones')
         .select('*')
         .eq('usuario_id', perfilId)
         .order('creado_en', { ascending: false })
         .limit(10);
-        
+
       if (data) {
         setNotificaciones(data);
         setNoLeidas(data.filter(n => !n.leido).length);
       }
     };
-    
+
     cargarNotificaciones();
-    
+
     const channel = supabase.channel('notificaciones_navbar')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notificaciones' }, payload => {
         // En un entorno de producción, filtrar con RLS o en el channel, aquí validamos localmente:
@@ -51,19 +51,19 @@ const Encabezado = () => {
         cargarNotificaciones();
       })
       .subscribe();
-      
-      return () => supabase.removeChannel(channel);
+
+    return () => supabase.removeChannel(channel);
   }, [user]);
 
   const marcarComoLeidas = async () => {
-      if (noLeidas === 0) return;
-      setNoLeidas(0);
-      
-      const noLeidasIds = notificaciones.filter(n => !n.leido).map(n => n.id_notificacion);
-      if (noLeidasIds.length === 0) return;
-      
-      setNotificaciones(prev => prev.map(n => ({...n, leido: true})));
-      await supabase.from('notificaciones').update({ leido: true }).in('id_notificacion', noLeidasIds);
+    if (noLeidas === 0) return;
+    setNoLeidas(0);
+
+    const noLeidasIds = notificaciones.filter(n => !n.leido).map(n => n.id_notificacion);
+    if (noLeidasIds.length === 0) return;
+
+    setNotificaciones(prev => prev.map(n => ({ ...n, leido: true })));
+    await supabase.from('notificaciones').update({ leido: true }).in('id_notificacion', noLeidasIds);
   };
 
   const manejarToggle = () => setMostrarMenu(!mostrarMenu);
@@ -247,7 +247,7 @@ const Encabezado = () => {
           style={{ cursor: "pointer" }}
         >
           <img
-           
+
             alt=""
             src={logo}
             width="45"
@@ -255,20 +255,20 @@ const Encabezado = () => {
             className="d-inline-block me-2"
           />
           <strong>
-            <h4 className=  "mb-0">InterMarket</h4>
+            <h4 className="mb-0">InterMarket</h4>
           </strong>
         </Navbar.Brand>
 
         {/* Contenedor de iconos derecha (Notificaciones + Carrito) */}
         <div className="d-flex align-items-center ms-auto me-md-2">
-          
+
           {/* Campanita de Notificaciones */}
           {user && !esLogin && (
             <Dropdown align="end" className="me-2" onToggle={(isOpen) => { if (isOpen) marcarComoLeidas(); }}>
               <Dropdown.Toggle variant="outline-dark" className="border-0 bg-transparent text-dark p-2 position-relative shadow-none">
                 <i className="bi bi-bell-fill fs-5"></i>
                 {noLeidas > 0 && (
-                  <Badge bg="danger" className="position-absolute top-0 start-50 translate-middle rounded-pill" style={{fontSize: '0.65rem'}}>
+                  <Badge bg="danger" className="position-absolute top-0 start-50 translate-middle rounded-pill" style={{ fontSize: '0.65rem' }}>
                     {noLeidas}
                   </Badge>
                 )}
@@ -282,11 +282,11 @@ const Encabezado = () => {
                     <Dropdown.Item key={noti.id_notificacion} className={`border-bottom py-2 text-wrap ${!noti.leido ? 'bg-light' : ''}`}>
                       <div className="d-flex justify-content-between align-items-center mb-1">
                         <strong className={!noti.leido ? 'text-primary' : 'text-dark'}>{noti.titulo}</strong>
-                        <small className="text-muted" style={{fontSize: '0.7rem'}}>
+                        <small className="text-muted" style={{ fontSize: '0.7rem' }}>
                           {new Date(noti.creado_en).toLocaleDateString()}
                         </small>
                       </div>
-                      <p className="mb-0 text-muted" style={{fontSize: '0.85rem'}}>{noti.mensaje}</p>
+                      <p className="mb-0 text-muted" style={{ fontSize: '0.85rem' }}>{noti.mensaje}</p>
                     </Dropdown.Item>
                   ))
                 )}
@@ -294,35 +294,39 @@ const Encabezado = () => {
             </Dropdown>
           )}
 
-        {/* Botón del Carrito - Solo para compradores */}
-{!esLogin && role === 'comprador' && (
-  <button
-    type="button"
-    className="btn btn-outline-primary btn-sm me-2 d-flex align-items-center carrito-navbar-btn"
-    onClick={() => {
-      // Si estamos en /catalogo, abrir el modal
-      if (location.pathname === "/catalogo") {
-        // Disparamos un evento que escuchará el componente Catalogo
-        window.dispatchEvent(new Event("abrirCarrito"));
-      } else {
-        // Si no estamos en catálogo, navegamos primero
-        navigate("/catalogo");
-        // Y después de navegar, abrimos el modal (con un pequeño delay)
-        setTimeout(() => {
-          window.dispatchEvent(new Event("abrirCarrito"));
-        }, 300);
-      }
-    }}
-  >
-    <i className="bi bi-cart-fill me-2"></i>
-    <span>Carrito</span>
-    {carritoCount > 0 && (
-      <span className="badge bg-danger rounded-pill ms-2">
-        {carritoCount}
-      </span>
-    )}
-  </button>
-)}
+          {/* Botón del Carrito - Solo para compradores */}
+          {!esLogin && role === 'comprador' && (
+            <button
+              type="button"
+              className="btn btn-outline-primary btn-sm me-2 d-flex align-items-center carrito-navbar-btn"
+              onClick={() => {
+                // Si estamos en /catalogo, abrir el modal
+                if (location.pathname === "/catalogo") {
+                  // Disparamos un evento que escuchará el componente Catalogo
+                  window.dispatchEvent(new Event("abrirCarrito"));
+                } else {
+                  // Si no estamos en catálogo, navegamos primero
+                  navigate("/catalogo");
+                  // Y después de navegar, abrimos el modal (con un pequeño delay)
+                  setTimeout(() => {
+                    window.dispatchEvent(new Event("abrirCarrito"));
+                  }, 300);
+                }
+              }}
+            >
+              <i className="bi bi-cart-fill me-2"></i>
+              <span>Carrito</span>
+              {carritoCount > 0 && (
+                <span className="badge bg-danger rounded-pill ms-2">
+                  {carritoCount}
+                </span>
+              )}
+            </button>
+          )}
+          {/* Botón del menú para móviles */}
+          {!esLogin && (
+            <Navbar.Toggle aria-controls="menu-offcanvas" onClick={manejarToggle} className="ms-2 border-0 shadow-none p-1" />
+          )}
         </div>
 
         {/* Menú lateral */}

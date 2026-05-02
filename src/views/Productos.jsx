@@ -44,7 +44,7 @@ const Productos = () => {
         categoria_id: '',
         url_imagenes: '',
         id_estado: '2'
-    });
+    }); 
 
     // ================== CARGAR DATOS ==================
     const cargarProductos = async () => {
@@ -131,40 +131,41 @@ const Productos = () => {
 
     const parsearNumero = (valor) => Number.parseFloat(String(valor).replace(",", "."));
 
-    const convertirArchivoABase64 = (archivo) =>
-        new Promise((resolve, reject) => {
-            const lector = new FileReader();
-            lector.readAsDataURL(archivo);
-            lector.onload = () => resolve(lector.result);
-            lector.onerror = (error) => reject(error);
-        });
-
-    const manejoCambioArchivo = async (e) => {
-        const archivo = e.target.files?.[0];
-        if (!archivo) return;
+    // Ya no usamos Base64, subiremos directamente el archivo a Supabase Storage
+    const subirImagenASupabase = async (archivo, bucketName) => {
         try {
-            const base64 = await convertirArchivoABase64(archivo);
-            setNuevoProducto((prev) => ({ ...prev, url_imagenes: base64 }));
-        } catch (err) {
-            setToast({ mostrar: true, mensaje: "No se pudo procesar la imagen", tipo: "error" });
+            const fileExt = archivo.name.split('.').pop();
+            const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+            const filePath = `${fileName}`;
+            
+            const { error: uploadError } = await supabase.storage.from(bucketName).upload(filePath, archivo);
+            if (uploadError) throw uploadError;
+            
+            const { data } = supabase.storage.from(bucketName).getPublicUrl(filePath);
+            return data.publicUrl;
+        } catch (error) {
+            console.error("Error subiendo imagen:", error);
+            throw new Error("No se pudo subir la imagen al servidor.");
         }
     };
 
-    const manejoCambioArchivoActualizar = async (e) => {
-        const archivo = e.target.files?.[0];
-        if (!archivo) return;
-        try {
-            const base64 = await convertirArchivoABase64(archivo);
-            setProductoEditar((prev) => ({ ...prev, url_imagenes: base64 }));
-        } catch (err) {
-            setToast({ mostrar: true, mensaje: "No se pudo procesar la imagen", tipo: "error" });
-        }
+    const manejoCambioArchivo = (e) => {
+        const archivos = Array.from(e.target.files || []);
+        if (archivos.length === 0) return;
+        setNuevoProducto((prev) => ({ ...prev, archivos_imagen: archivos }));
+    };
+
+    const manejoCambioArchivoActualizar = (e) => {
+        const archivos = Array.from(e.target.files || []);
+        if (archivos.length === 0) return;
+        setProductoEditar((prev) => ({ ...prev, archivos_imagen: archivos }));
     };
 
     const abrirModalEdicion = (producto) => {
         setProductoEditar({
             ...producto,
-            url_imagenes: Array.isArray(producto.imagen_url) ? producto.imagen_url[0] : (producto.imagen_url || ''),
+            url_imagenes: Array.isArray(producto.imagen_url) ? producto.imagen_url : (producto.imagen_url ? [producto.imagen_url] : []),
+            archivos_imagen: null,
             id_estado: producto.id_estado?.toString() || '2'
         });
         setMostrarModalEdicion(true);
@@ -205,15 +206,30 @@ const Productos = () => {
 
             const precioFinal = Math.round(nuevoPrecio * 100) / 100;
             const precioOriginalExistente = Number(producto.precio_original || 0);
+            const precioParaGuardar = precioOriginalExistente > 0 ? precioOriginalExistente : precioActual;
 
+            // 1. Enviar el cambio a Supabase
+            const { error } = await supabase
+                .from("productos")
+                .update({ 
+                    precio_venta: precioFinal, 
+                    precio_original: precioParaGuardar
+                })
+                .eq("id_producto", producto.id_producto);
+
+            if (error) {
+                console.error("Error al aplicar descuento en BD:", error);
+                throw error;
+            }
+
+            // 2. Actualizar el estado local
             setProductos((prev) =>
                 prev.map((item) =>
                     item.id_producto === producto.id_producto
                         ? {
                             ...item,
                             precio_venta: precioFinal,
-                            // Solo para cálculo visual de oferta en frontend.
-                            precio_original: precioOriginalExistente > 0 ? precioOriginalExistente : precioActual
+                            precio_original: precioParaGuardar
                         }
                         : item
                 )
@@ -221,7 +237,7 @@ const Productos = () => {
 
             setToast({
                 mostrar: true,
-                mensaje: `Descuento aplicado temporalmente. Nuevo precio: $${precioFinal.toFixed(2)}`,
+                mensaje: `Descuento aplicado con éxito. Nuevo precio: $${precioFinal.toFixed(2)}`,
                 tipo: "exito"
             });
             return true;
@@ -254,6 +270,17 @@ const Productos = () => {
                 return;
             }
 
+            setCargando(true);
+
+            let urlsPublicas = [];
+            if (nuevoProducto.archivos_imagen && nuevoProducto.archivos_imagen.length > 0) {
+                // Subir cada archivo secuencialmente (o en paralelo con Promise.all)
+                for (const archivo of nuevoProducto.archivos_imagen) {
+                    const url = await subirImagenASupabase(archivo, 'productos');
+                    urlsPublicas.push(url);
+                }
+            }
+
             const payload = {
                 nombre_producto: nuevoProducto.nombre_producto.trim(),
                 descripcion: nuevoProducto.descripcion?.trim() || "",
@@ -261,7 +288,7 @@ const Productos = () => {
                 precio_compra: precioCompra,
                 categoria_id: categoriaId,
                 id_estado: Number.isInteger(idEstado) ? idEstado : 2,
-                imagen_url: nuevoProducto.url_imagenes ? [nuevoProducto.url_imagenes] : null,
+                imagen_url: urlsPublicas.length > 0 ? urlsPublicas : null,
                 id_tienda: idTienda
             };
 
@@ -277,12 +304,15 @@ const Productos = () => {
                 precio_compra: "",
                 categoria_id: "",
                 url_imagenes: "",
+                archivo_imagen: null,
                 id_estado: "2"
             });
             setToast({ mostrar: true, mensaje: "Producto registrado exitosamente.", tipo: "exito" });
         } catch (err) {
             console.error("Error al registrar producto:", err.message);
             setToast({ mostrar: true, mensaje: `Error al registrar producto: ${err.message}`, tipo: "error" });
+        } finally {
+            setCargando(false);
         }
     };
 
@@ -299,6 +329,17 @@ const Productos = () => {
                 return;
             }
 
+            setCargando(true);
+
+            let urlsPublicas = productoEditar.url_imagenes || []; 
+            if (productoEditar.archivos_imagen && productoEditar.archivos_imagen.length > 0) {
+                urlsPublicas = []; // Opción A: Reemplazar por completo
+                for (const archivo of productoEditar.archivos_imagen) {
+                    const url = await subirImagenASupabase(archivo, 'productos');
+                    urlsPublicas.push(url);
+                }
+            }
+
             const payload = {
                 nombre_producto: productoEditar.nombre_producto.trim(),
                 descripcion: productoEditar.descripcion?.trim() || "",
@@ -306,7 +347,7 @@ const Productos = () => {
                 precio_compra: Number(productoEditar.precio_compra),
                 categoria_id: Number(productoEditar.categoria_id),
                 id_estado: Number(productoEditar.id_estado || 2),
-                imagen_url: productoEditar.url_imagenes ? [productoEditar.url_imagenes] : null
+                imagen_url: urlsPublicas.length > 0 ? urlsPublicas : null
             };
 
             const { error } = await supabase
@@ -322,6 +363,8 @@ const Productos = () => {
         } catch (err) {
             console.error("Error al actualizar producto:", err.message);
             setToast({ mostrar: true, mensaje: "Error al actualizar producto.", tipo: "error" });
+        } finally {
+            setCargando(false);
         }
     };
 

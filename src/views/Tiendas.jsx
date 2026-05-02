@@ -33,13 +33,23 @@ const Tiendas = () => {
         imagen_url: ""
     });
 
-    const convertirArchivoABase64 = (archivo) =>
-        new Promise((resolve, reject) => {
-            const lector = new FileReader();
-            lector.readAsDataURL(archivo);
-            lector.onload = () => resolve(lector.result);
-            lector.onerror = (error) => reject(error);
-        });
+    // Ya no usamos Base64, subiremos directamente el archivo a Supabase Storage
+    const subirImagenASupabase = async (archivo, bucketName) => {
+        try {
+            const fileExt = archivo.name.split('.').pop();
+            const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+            const filePath = `${fileName}`;
+            
+            const { error: uploadError } = await supabase.storage.from(bucketName).upload(filePath, archivo);
+            if (uploadError) throw uploadError;
+            
+            const { data } = supabase.storage.from(bucketName).getPublicUrl(filePath);
+            return data.publicUrl;
+        } catch (error) {
+            console.error("Error subiendo imagen:", error);
+            throw new Error("No se pudo subir la imagen al servidor.");
+        }
+    };
 
     const cargarTiendas = async () => {
         try {
@@ -111,26 +121,17 @@ const Tiendas = () => {
         setTiendaEditar((prev) => ({ ...prev, [name]: value }));
     };
 
-    const manejoCambioArchivo = async (e) => {
+    const manejoCambioArchivo = (e) => {
         const archivo = e.target.files?.[0];
         if (!archivo) return;
-        try {
-            const base64 = await convertirArchivoABase64(archivo);
-            setNuevaTienda((prev) => ({ ...prev, imagen_url: base64 }));
-        } catch (err) {
-            setToast({ mostrar: true, mensaje: "No se pudo procesar la imagen", tipo: "error" });
-        }
+        // Guardamos el objeto File en lugar del Base64
+        setNuevaTienda((prev) => ({ ...prev, archivo_imagen: archivo }));
     };
 
-    const manejoCambioArchivoActualizar = async (e) => {
+    const manejoCambioArchivoActualizar = (e) => {
         const archivo = e.target.files?.[0];
         if (!archivo) return;
-        try {
-            const base64 = await convertirArchivoABase64(archivo);
-            setTiendaEditar((prev) => ({ ...prev, imagen_url: base64 }));
-        } catch (err) {
-            setToast({ mostrar: true, mensaje: "No se pudo procesar la imagen", tipo: "error" });
-        }
+        setTiendaEditar((prev) => ({ ...prev, archivo_imagen: archivo }));
     };
 
     const abrirModalEdicion = (tienda) => {
@@ -150,9 +151,16 @@ const Tiendas = () => {
                 return;
             }
 
+            setCargando(true);
+            
+            let urlPublica = null;
+            if (nuevaTienda.archivo_imagen) {
+                urlPublica = await subirImagenASupabase(nuevaTienda.archivo_imagen, 'tiendas');
+            }
+
             const payload = {
                 nombre_tienda: nuevaTienda.nombre_tienda.trim(),
-                imagen_url: nuevaTienda.imagen_url || null
+                imagen_url: urlPublica
             };
 
             // 1. Crear la tienda y obtener el id_tienda generado
@@ -177,11 +185,13 @@ const Tiendas = () => {
 
             await cargarTiendas();
             setMostrarModalRegistro(false);
-            setNuevaTienda({ nombre_tienda: "", imagen_url: "" });
+            setNuevaTienda({ nombre_tienda: "", imagen_url: "", archivo_imagen: null });
             setToast({ mostrar: true, mensaje: "Tienda registrada exitosamente.", tipo: "exito" });
         } catch (err) {
             console.error("Error al registrar tienda:", err.message);
             setToast({ mostrar: true, mensaje: `Error al registrar tienda: ${err.message}`, tipo: "error" });
+        } finally {
+            setCargando(false);
         }
     };
 
@@ -192,10 +202,17 @@ const Tiendas = () => {
                 setToast({ mostrar: true, mensaje: "Debe llenar el nombre de la tienda.", tipo: "advertencia" });
                 return;
             }
+            
+            setCargando(true);
+            
+            let urlPublica = tiendaEditar.imagen_url;
+            if (tiendaEditar.archivo_imagen) {
+                urlPublica = await subirImagenASupabase(tiendaEditar.archivo_imagen, 'tiendas');
+            }
 
             const payload = {
                 nombre_tienda: tiendaEditar.nombre_tienda.trim(),
-                imagen_url: tiendaEditar.imagen_url || null
+                imagen_url: urlPublica
             };
 
             const { error } = await supabase
@@ -210,6 +227,8 @@ const Tiendas = () => {
         } catch (err) {
             console.error("Error al actualizar tienda:", err.message);
             setToast({ mostrar: true, mensaje: `Error al actualizar tienda: ${err.message}`, tipo: "error" });
+        } finally {
+            setCargando(false);
         }
     };
 

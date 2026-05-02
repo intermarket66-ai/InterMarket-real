@@ -3,6 +3,8 @@ import { Container, Row, Col, Card, Badge, Spinner, Button, Form, InputGroup } f
 import { supabase } from '../database/supabaseconfig';
 import CarritoModal from '../components/catalogo/CarritoModal';
 import ModalMensaje from '../components/catalogo/ModalMensaje';
+import ModalDetalleProducto from '../components/catalogo/ModalDetalleProducto';
+import ModalPostCompra from '../components/catalogo/ModalPostCompra';
 import { useAuth } from '../context/AuthContext';
 
 function Catalogo() {
@@ -12,12 +14,26 @@ function Catalogo() {
     const [carrito, setCarrito] = useState([]);
     const [mostrarCarrito, setMostrarCarrito] = useState(false);
     const [busqueda, setBusqueda] = useState('');
+    const [mostrarSoloOfertas, setMostrarSoloOfertas] = useState(false);
     const [mostrarModalMensaje, setMostrarModalMensaje] = useState(false);
+    const [mostrarModalDetalle, setMostrarModalDetalle] = useState(false);
+    const [mostrarModalPostCompra, setMostrarModalPostCompra] = useState(false);
+    const [itemsCompradosRecientemente, setItemsCompradosRecientemente] = useState([]);
     const [productoSeleccionado, setProductoSeleccionado] = useState(null);
 
     const abrirModalContacto = (producto) => {
         setProductoSeleccionado(producto);
         setMostrarModalMensaje(true);
+    };
+
+    const abrirModalDetalles = (producto) => {
+        setProductoSeleccionado(producto);
+        setMostrarModalDetalle(true);
+    };
+
+    const handleCompraExitosa = (itemsComprados) => {
+        setItemsCompradosRecientemente(itemsComprados);
+        setMostrarModalPostCompra(true);
     };
 
     // Cargar productos y carrito + escuchar evento del encabezado
@@ -150,8 +166,16 @@ function Catalogo() {
                 <h4 className="m-0 fw-bold"><i className="bi bi-tag-fill me-2"></i>Semana de ofertas</h4>
                 <p className="m-0 text-white-50 small d-none d-sm-block">Aprovecha los mejores descuentos en tecnología y más</p>
               </div>
-              <div className="bg-white text-dark px-3 py-2 rounded fw-bold shadow-sm" style={{ cursor: 'pointer' }}>
-                <i className="bi bi-calendar-event me-2 text-danger"></i>Ver todo
+              <div 
+                className="bg-white text-dark px-3 py-2 rounded fw-bold shadow-sm" 
+                style={{ cursor: 'pointer', transition: 'all 0.2s' }}
+                onClick={() => setMostrarSoloOfertas(!mostrarSoloOfertas)}
+              >
+                {mostrarSoloOfertas ? (
+                    <><i className="bi bi-grid-fill me-2 text-primary"></i>Ver catálogo completo</>
+                ) : (
+                    <><i className="bi bi-percent me-2 text-danger"></i>Ver solo ofertas</>
+                )}
               </div>
             </div>
 
@@ -171,33 +195,45 @@ function Catalogo() {
                 <Row>
                     {productos
                         .filter(p => p.nombre_producto?.toLowerCase().includes(busqueda.toLowerCase()) || p.categorias?.nombre_categoria?.toLowerCase().includes(busqueda.toLowerCase()))
+                        .filter(p => !mostrarSoloOfertas || (p.precio_original && p.precio_original > p.precio_venta))
                         .map((producto) => (
-                        <Col key={producto.id_producto} xs={12} sm={6} md={4} lg={3} className="mb-4">
+                        <Col key={producto.id_producto} xs={6} sm={6} md={4} lg={3} className="mb-4">
                             <Card className="h-100 shadow-sm border-0 product-card-hover">
                                 {producto.imagen_url && producto.imagen_url.length > 0 ? (
-                                    <div className="position-relative overflow-hidden" style={{ height: '200px' }}>
-                                        <Card.Img
-                                            variant="top"
-                                            src={producto.imagen_url[0]}
-                                            alt={producto.nombre_producto}
-                                            className="w-100 h-100"
-                                            style={{ objectFit: 'cover' }}
-                                            onError={(e) => e.target.src = 'https://via.placeholder.com/200x200?text=Sin+Imagen'}
-                                        />
-                                        {producto.precio_original > producto.precio_venta && (
-                                            <Badge bg="danger" className="position-absolute top-0 end-0 m-2 px-2 py-1 shadow-sm">
-                                                ¡Oferta!
-                                            </Badge>
-                                        )}
+                                    <div 
+                                        className="position-relative overflow-hidden ratio ratio-4x3 bg-light" 
+                                        style={{ cursor: 'pointer' }}
+                                        onClick={() => abrirModalDetalles(producto)}
+                                    >
+                                        <div>
+                                            <Card.Img
+                                                variant="top"
+                                                src={producto.imagen_url[0]}
+                                                alt={producto.nombre_producto}
+                                                className="w-100 h-100"
+                                                style={{ objectFit: 'cover' }}
+                                                onError={(e) => e.target.src = 'https://via.placeholder.com/200x150?text=Sin+Imagen'}
+                                            />
+                                            {producto.precio_original > producto.precio_venta && (
+                                                <Badge bg="danger" className="position-absolute top-0 end-0 m-2 px-2 py-1 shadow-sm" style={{ width: 'auto', height: 'auto' }}>
+                                                    ¡Oferta!
+                                                </Badge>
+                                            )}
+                                        </div>
                                     </div>
                                 ) : (
-                                    <div className="bg-light d-flex align-items-center justify-content-center" style={{ height: '200px' }}>
+                                    <div className="bg-light d-flex align-items-center justify-content-center ratio ratio-4x3" style={{ cursor: 'pointer' }}>
                                         <i className="bi bi-image text-muted" style={{ fontSize: '3rem' }}></i>
                                     </div>
                                 )}
 
                                 <Card.Body className="d-flex flex-column">
-                                    <Card.Title className="text-truncate fw-bold mb-1" title={producto.nombre_producto}>
+                                    <Card.Title 
+                                        className="text-truncate fw-bold mb-1 fs-6" 
+                                        title={producto.nombre_producto}
+                                        style={{ cursor: 'pointer' }}
+                                        onClick={() => abrirModalDetalles(producto)}
+                                    >
                                         {producto.nombre_producto}
                                     </Card.Title>
 
@@ -207,28 +243,28 @@ function Catalogo() {
                                         </Badge>
                                     </div>
 
-                                    <Card.Text className="text-muted small mb-3 flex-grow-1">
+                                    <Card.Text className="text-muted small mb-2 flex-grow-1 d-none d-sm-block">
                                         {producto.descripcion?.length > 70 
                                             ? `${producto.descripcion.substring(0, 70)}...` 
                                             : producto.descripcion || 'Sin descripción'}
                                     </Card.Text>
 
                                     <div className="mt-auto">
-                                        <div className="mb-3 bg-light p-2 rounded text-center">
+                                        <div className="mb-2 bg-light p-1 p-sm-2 rounded text-center">
                                             {producto.precio_original > producto.precio_venta ? (
                                                 <>
-                                                    <span className="text-decoration-line-through text-muted small me-2">${parseFloat(producto.precio_original).toFixed(2)}</span>
-                                                    <span className="fw-bold fs-4 text-danger">${parseFloat(producto.precio_venta || 0).toFixed(2)}</span>
+                                                    <span className="text-decoration-line-through text-muted small me-1 d-block d-sm-inline">${parseFloat(producto.precio_original).toFixed(2)}</span>
+                                                    <span className="fw-bold fs-6 fs-sm-5 text-danger">${parseFloat(producto.precio_venta || 0).toFixed(2)}</span>
                                                 </>
                                             ) : (
-                                                <span className="fw-bold fs-4 text-success">${parseFloat(producto.precio_venta || 0).toFixed(2)}</span>
+                                                <span className="fw-bold fs-6 fs-sm-5 text-success">${parseFloat(producto.precio_venta || 0).toFixed(2)}</span>
                                             )}
                                         </div>
 
-                                        <div className="d-flex gap-2">
+                                        <div className="d-flex gap-1 gap-sm-2">
                                             <Button 
                                                 variant="outline-secondary" 
-                                                className="fw-bold rounded-pill"
+                                                className="fw-bold rounded-pill px-2 px-sm-3"
                                                 onClick={() => abrirModalContacto(producto)}
                                                 title="Contactar al vendedor"
                                             >
@@ -236,10 +272,11 @@ function Catalogo() {
                                             </Button>
                                             <Button 
                                                 variant="outline-primary" 
-                                                className="w-100 fw-bold rounded-pill"
+                                                className="w-100 fw-bold rounded-pill px-2 px-sm-3"
                                                 onClick={() => agregarAlCarrito(producto)}
                                             >
-                                                <i className="bi bi-cart-plus me-2"></i>Añadir
+                                                <i className="bi bi-cart-plus me-1 me-sm-2"></i>
+                                                <span className="d-none d-sm-inline">Añadir</span>
                                             </Button>
                                         </div>
                                     </div>
@@ -257,6 +294,7 @@ function Catalogo() {
                 carrito={carrito}
                 setCarrito={setCarrito}
                 total={totalCarrito}
+                onCompraExitosa={handleCompraExitosa}
             />
 
             {/* Modal de Mensaje */}
@@ -264,6 +302,22 @@ function Catalogo() {
                 mostrar={mostrarModalMensaje}
                 setMostrar={setMostrarModalMensaje}
                 producto={productoSeleccionado}
+            />
+
+            {/* Modal de Detalles, Tienda y Reseñas */}
+            <ModalDetalleProducto 
+                mostrar={mostrarModalDetalle}
+                setMostrar={setMostrarModalDetalle}
+                producto={productoSeleccionado}
+                agregarAlCarrito={agregarAlCarrito}
+            />
+
+            {/* Modal Post-Compra (Invita a calificar) */}
+            <ModalPostCompra
+                mostrar={mostrarModalPostCompra}
+                setMostrar={setMostrarModalPostCompra}
+                items={itemsCompradosRecientemente}
+                alCalificar={abrirModalDetalles}
             />
         </Container>
     );

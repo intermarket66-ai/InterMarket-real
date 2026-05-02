@@ -121,24 +121,39 @@ const ModalEdicionProducto = ({
                         </Col>
                         <Col md={6}>
                             <Form.Group className="mb-3">
-                                <Form.Label>Nueva Imagen (opcional)</Form.Label>
+                                <Form.Label>Nuevas Imágenes (reemplazan actuales)</Form.Label>
                                 <Form.Control
                                     type="file"
                                     accept="image/*"
+                                    multiple
                                     onChange={manejoCambioArchivoActualizar}
                                 />
                             </Form.Group>
                         </Col>
                     </Row>
 
-                    {productoEditar.url_imagenes && (
+                    {productoEditar.url_imagenes && productoEditar.url_imagenes.length > 0 && (
                         <div className="text-center mb-3">
-                            <p className="small text-muted">Imagen actual:</p>
-                            <img
-                                src={productoEditar.url_imagenes}
-                                alt="Vista previa"
-                                style={{ maxWidth: '100%', maxHeight: '220px', objectFit: 'contain' }}
-                            />
+                            <p className="small text-muted mb-2">Imágenes actuales:</p>
+                            <div className="d-flex justify-content-center flex-wrap gap-2">
+                                {Array.isArray(productoEditar.url_imagenes) 
+                                    ? productoEditar.url_imagenes.map((url, idx) => (
+                                        <img
+                                            key={idx}
+                                            src={url}
+                                            alt={`Actual ${idx+1}`}
+                                            style={{ maxWidth: '100px', maxHeight: '100px', objectFit: 'cover', borderRadius: '4px' }}
+                                        />
+                                    ))
+                                    : (
+                                        <img
+                                            src={productoEditar.url_imagenes}
+                                            alt="Actual"
+                                            style={{ maxWidth: '100%', maxHeight: '220px', objectFit: 'contain' }}
+                                        />
+                                    )
+                                }
+                            </div>
                         </div>
                     )}
                 </Form>

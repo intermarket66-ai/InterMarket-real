@@ -292,3 +292,66 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.pedidos;
 
   -- Permitir a los usuarios autenticados subir fotos
   CREATE POLICY "Users can upload avatars" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'avatars' AND auth.role() = 'authenticated');
+
+  -- =============================================
+  -- 11. BUCKETS DE ALMACENAMIENTO PARA IMÁGENES
+  -- =============================================
+  -- Ejecuta estos comandos para crear los buckets para tiendas y productos
+  
+  -- Bucket para Productos
+  INSERT INTO storage.buckets (id, name, public) VALUES ('productos', 'productos', true);
+  CREATE POLICY "Public Access Productos" ON storage.objects FOR SELECT USING (bucket_id = 'productos');
+  CREATE POLICY "Users can upload productos" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'productos' AND auth.role() = 'authenticated');
+  CREATE POLICY "Users can update productos" ON storage.objects FOR UPDATE USING (bucket_id = 'productos' AND auth.role() = 'authenticated');
+  CREATE POLICY "Users can delete productos" ON storage.objects FOR DELETE USING (bucket_id = 'productos' AND auth.role() = 'authenticated');
+
+  -- Bucket para Tiendas
+  INSERT INTO storage.buckets (id, name, public) VALUES ('tiendas', 'tiendas', true);
+  CREATE POLICY "Public Access Tiendas" ON storage.objects FOR SELECT USING (bucket_id = 'tiendas');
+  CREATE POLICY "Users can upload tiendas" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'tiendas' AND auth.role() = 'authenticated');
+  CREATE POLICY "Users can update tiendas" ON storage.objects FOR UPDATE USING (bucket_id = 'tiendas' AND auth.role() = 'authenticated');
+  CREATE POLICY "Users can delete tiendas" ON storage.objects FOR DELETE USING (bucket_id = 'tiendas' AND auth.role() = 'authenticated');
+
+  -- =============================================
+  -- 12. ACTUALIZACIONES ADICIONALES (OFERTAS)
+  -- =============================================
+  -- Ejecutar esto en el SQL Editor de Supabase para habilitar las ofertas/descuentos
+  -- ALTER TABLE public.productos ADD COLUMN precio_original NUMERIC(12,2);
+
+  -- =============================================
+  -- 13. RESEÑAS Y CALIFICACIONES (PRODUCTOS Y TIENDAS)
+  -- =============================================
+  
+  -- Tabla para reseñas de productos
+  CREATE TABLE IF NOT EXISTS public.resenas_productos (
+    id_resena UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    producto_id UUID REFERENCES public.productos(id_producto) ON DELETE CASCADE,
+    comprador_id UUID REFERENCES public.perfiles(perfil_id) ON DELETE CASCADE,
+    calificacion INTEGER CHECK (calificacion >= 1 AND calificacion <= 5) NOT NULL,
+    comentario TEXT NOT NULL,
+    creado_en TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(producto_id, comprador_id)
+  );
+
+  ALTER TABLE public.resenas_productos ENABLE ROW LEVEL SECURITY;
+  CREATE POLICY "Reseñas visibles para todos" ON public.resenas_productos FOR SELECT USING (true);
+  CREATE POLICY "Usuarios insertan sus reseñas" ON public.resenas_productos FOR INSERT WITH CHECK (
+    EXISTS (SELECT 1 FROM public.perfiles p WHERE p.id_usuario = auth.uid() AND p.perfil_id = resenas_productos.comprador_id)
+  );
+
+  -- Tabla para calificaciones de tiendas
+  CREATE TABLE IF NOT EXISTS public.calificaciones_tiendas (
+    id_calificacion UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tienda_id UUID REFERENCES public.tiendas(id_tienda) ON DELETE CASCADE,
+    comprador_id UUID REFERENCES public.perfiles(perfil_id) ON DELETE CASCADE,
+    puntuacion INTEGER CHECK (puntuacion >= 1 AND puntuacion <= 5) NOT NULL,
+    comentario TEXT,
+    creado_en TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(tienda_id, comprador_id)
+  );
+
+  ALTER TABLE public.calificaciones_tiendas ENABLE ROW LEVEL SECURITY;
+  CREATE POLICY "Calificaciones tienda visibles" ON public.calificaciones_tiendas FOR SELECT USING (true);
+  CREATE POLICY "Usuarios insertan sus calificaciones tienda" ON public.calificaciones_tiendas FOR INSERT WITH CHECK (
+    EXISTS (SELECT 1 FROM public.perfiles p WHERE p.id_usuario = auth.uid() AND p.perfil_id = calificaciones_tiendas.comprador_id)
+  );
