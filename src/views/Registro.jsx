@@ -59,6 +59,20 @@ function Registro() {
     }
   };
 
+  const registrarConGoogle = async () => {
+    try {
+      setCargando(true);
+      setError(null);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+      });
+      if (error) throw error;
+    } catch (err) {
+      setError("Error de conexión con Google.");
+      setCargando(false);
+    }
+  };
+
   useEffect(() => { 
     if (user) navegar("/seleccion-rol");
   }, [user, navegar]);
@@ -86,6 +100,7 @@ function Registro() {
                   setContraseña={setContraseña}
                   setConfirmarContraseña={setConfirmarContraseña}
                   registrarUsuario={registrarUsuario}
+                  registrarConGoogle={registrarConGoogle}
                   cargando={cargando}
                 />
                 

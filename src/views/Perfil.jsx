@@ -1,38 +1,162 @@
 import React, { useEffect, useState } from "react";
-import { Container, Row, Col, Card, Spinner, Button } from "react-bootstrap";
+import { Container, Row, Col, Card, Spinner, Button, Tabs, Tab, Form, Table, Badge, Alert } from "react-bootstrap";
 import { supabase } from "../database/supabaseconfig";
+import { useAuth } from "../context/AuthContext";
 
 const Perfil = () => {
+  const { user } = useAuth();
   const [perfil, setPerfil] = useState(null);
+  const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [guardando, setGuardando] = useState(false);
+  const [fotoUrl, setFotoUrl] = useState("");
+  const [archivoNuevo, setArchivoNuevo] = useState(null);
+  const [mensaje, setMensaje] = useState({ texto: "", tipo: "" });
 
   useEffect(() => {
-    const fetchPerfil = async () => {
+    const fetchDatos = async () => {
       setLoading(true);
-      // Obtener usuario autenticado
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        setPerfil(null);
         setLoading(false);
         return;
       }
-      // Buscar perfil por id_usuario
-      const { data: perfilData } = await supabase
+      
+      // 1. Obtener perfil
+      let { data: perfilData } = await supabase
         .from("perfiles")
-        .select("*")
+        .select("*, usuarios(email, username)")
         .eq("id_usuario", user.id)
         .maybeSingle();
-      setPerfil(perfilData);
+        
+      if (!perfilData) {
+        // Fallback: Si por alguna razón el trigger de Supabase falló al registrarse (ej. con Google), 
+        // creamos el registro del usuario y perfil manualmente aquí.
+        try {
+          const email = user.email || '';
+          const username = email ? email.split('@')[0] : 'usuario';
+          
+          await supabase.from('usuarios').upsert({
+            id_usuario: user.id,
+            username: username,
+            email: email,
+            rol: 'comprador'
+          });
+          
+          await supabase.from('perfiles').upsert({
+            id_usuario: user.id,
+          });
+
+          const { data: retryData } = await supabase
+            .from("perfiles")
+            .select("*, usuarios(email, username)")
+            .eq("id_usuario", user.id)
+            .maybeSingle();
+            
+          perfilData = retryData;
+        } catch (err) {
+          console.error("Error intentando crear el perfil de respaldo:", err);
+        }
+      }
+        
+      if (perfilData) {
+        setPerfil(perfilData);
+        setFotoUrl(perfilData.foto_perfil || "");
+        
+        // 2. Obtener historial de pedidos
+        const { data: pedidosData } = await supabase
+          .from("pedidos")
+          .select(`
+            id_pedido, 
+            creado_en, 
+            precio_unitario, 
+            id_estado, 
+            productos(nombre_producto, imagen_url)
+          `)
+          .eq("perfil_id", perfilData.perfil_id)
+          .order("creado_en", { ascending: false });
+          
+        setPedidos(pedidosData || []);
+      }
       setLoading(false);
     };
-    fetchPerfil();
-  }, []);
+    fetchDatos();
+  }, [user]);
+
+  const manejarArchivo = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setArchivoNuevo(e.target.files[0]);
+    }
+  };
+
+  const guardarPerfil = async () => {
+    if (!perfil) return;
+    setGuardando(true);
+    setMensaje({ texto: "", tipo: "" });
+    try {
+      let urlFinal = fotoUrl;
+
+      // Si hay un archivo nuevo, lo subimos
+      if (archivoNuevo) {
+        const fileExt = archivoNuevo.name.split('.').pop();
+        const fileName = `${user.id}-${Math.random()}.${fileExt}`;
+        const filePath = `avatares/${fileName}`; // Usaremos una carpeta dentro del bucket por orden
+
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, archivoNuevo);
+
+        if (uploadError) throw uploadError;
+
+        // Obtener la URL pública
+        const { data: publicUrlData } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(filePath);
+          
+        urlFinal = publicUrlData.publicUrl;
+        setFotoUrl(urlFinal);
+      }
+
+      const { error } = await supabase
+        .from("perfiles")
+        .update({ foto_perfil: urlFinal })
+        .eq("perfil_id", perfil.perfil_id);
+        
+      if (error) throw error;
+      setMensaje({ texto: "Perfil actualizado correctamente.", tipo: "success" });
+      setArchivoNuevo(null); // Limpiamos el archivo subido
+    } catch (err) {
+      console.error(err);
+      setMensaje({ texto: "Error al actualizar perfil. ¿Ya ejecutaste el código SQL?", tipo: "danger" });
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  const getBadgeColor = (id_estado) => {
+    switch(id_estado) {
+      case 1: return 'warning'; // Pendiente
+      case 2: return 'success'; // Pagado / Aceptado
+      case 3: return 'danger'; // Cancelado / Rechazado
+      case 4: return 'info'; // Entregado / Completado
+      default: return 'secondary';
+    }
+  };
+
+  const getEstadoTexto = (id_estado) => {
+    switch(id_estado) {
+      case 1: return 'En proceso (Pendiente)';
+      case 2: return 'Aceptado por vendedor';
+      case 3: return 'Rechazado/Cancelado';
+      case 4: return 'Enviado/Entregado';
+      default: return 'Desconocido';
+    }
+  };
 
   if (loading) {
     return (
       <Container className="mt-5 text-center">
         <Spinner animation="border" />
-        <div>Cargando perfil...</div>
+        <div>Cargando panel...</div>
       </Container>
     );
   }
@@ -51,34 +175,113 @@ const Perfil = () => {
   }
 
   return (
-    <Container className="mt-5">
-      <Row className="justify-content-center">
-        <Col md={6} lg={5}>
-          <Card className="shadow-sm">
-            <Card.Body>
-              <div className="text-center mb-3">
-                <img
-                  src={perfil.foto_perfil || "https://ui-avatars.com/api/?name=User"}
-                  alt="Foto de perfil"
-                  className="rounded-circle mb-2"
-                  style={{ width: 100, height: 100, objectFit: "cover" }}
-                />
-                <h4 className="mt-2">{perfil.nombre || "Usuario"}</h4>
-                <div className="text-muted small mb-2">{perfil.email || "Sin email"}</div>
-              </div>
-              <div>
-                <strong>Rol:</strong> {perfil.rol || "No especificado"}
-              </div>
-              <div>
-                <strong>Creado en:</strong> {perfil.creado_en ? new Date(perfil.creado_en).toLocaleString() : "-"}
-              </div>
-              <div className="mt-3 text-center">
-                <Button variant="primary">Editar perfil</Button>
-              </div>
-            </Card.Body>
-          </Card>
+    <Container className="mt-5 pt-4">
+      <Row className="mb-4">
+        <Col>
+          <h2 className="fw-bold text-primary"><i className="bi bi-person-circle me-2"></i>Mi Panel</h2>
         </Col>
       </Row>
+
+      <Tabs defaultActiveKey="perfil" className="mb-4">
+        {/* PESTAÑA MI INFORMACIÓN */}
+        <Tab eventKey="perfil" title={<span><i className="bi bi-info-circle me-2"></i>Mi Información</span>}>
+          <Card className="shadow-sm border-0 mt-3">
+            <Card.Body className="p-4">
+              {mensaje.texto && <Alert variant={mensaje.tipo}>{mensaje.texto}</Alert>}
+              <Row>
+                <Col md={4} className="text-center border-end mb-4 mb-md-0">
+                  <img
+                    src={fotoUrl || "https://ui-avatars.com/api/?name=" + (perfil.usuarios?.username || "Usuario")}
+                    alt="Foto de perfil"
+                    className="rounded-circle mb-3 shadow"
+                    style={{ width: 150, height: 150, objectFit: "cover", border: '4px solid #fff' }}
+                  />
+                  <h4 className="fw-bold">{perfil.usuarios?.username || "Usuario"}</h4>
+                  <p className="text-muted">{perfil.usuarios?.email}</p>
+                  <Badge bg="primary" className="px-3 py-2 text-uppercase">
+                    {perfil.rol || "Comprador"}
+                  </Badge>
+                </Col>
+                
+                <Col md={8} className="ps-md-4">
+                  <h5 className="border-bottom pb-2 mb-4">Editar Perfil</h5>
+                  
+                  <Form.Group className="mb-4">
+                    <Form.Label className="fw-bold text-muted">Fotografía de Perfil</Form.Label>
+                    <Form.Control
+                      type="file"
+                      accept="image/*"
+                      onChange={manejarArchivo}
+                    />
+                    <Form.Text className="text-muted">
+                      Selecciona una imagen en formato JPG o PNG desde tu dispositivo.
+                    </Form.Text>
+                  </Form.Group>
+
+                  <Button variant="success" onClick={guardarPerfil} disabled={guardando}>
+                    {guardando ? 'Guardando...' : 'Guardar Cambios'}
+                  </Button>
+                </Col>
+              </Row>
+            </Card.Body>
+          </Card>
+        </Tab>
+
+        {/* PESTAÑA MIS PEDIDOS */}
+        <Tab eventKey="pedidos" title={<span><i className="bi bi-box-seam me-2"></i>Mis Pedidos ({pedidos.length})</span>}>
+          <Card className="shadow-sm border-0 mt-3">
+            <Card.Body className="p-4">
+              <h5 className="border-bottom pb-2 mb-4">Historial de Compras</h5>
+              
+              {pedidos.length === 0 ? (
+                <div className="text-center p-5 bg-light rounded">
+                  <i className="bi bi-cart-x text-muted mb-3" style={{ fontSize: '3rem' }}></i>
+                  <p className="text-muted">Aún no has realizado ninguna compra.</p>
+                </div>
+              ) : (
+                <Table responsive hover className="align-middle">
+                  <thead className="table-light">
+                    <tr>
+                      <th>Pedido</th>
+                      <th>Fecha</th>
+                      <th>Producto</th>
+                      <th>Precio</th>
+                      <th>Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pedidos.map(pedido => (
+                      <tr key={pedido.id_pedido}>
+                        <td><small className="text-muted">#{pedido.id_pedido.split('-')[0]}</small></td>
+                        <td>{new Date(pedido.creado_en).toLocaleDateString()}</td>
+                        <td>
+                          <div className="d-flex align-items-center">
+                            {pedido.productos?.imagen_url?.[0] && (
+                              <img 
+                                src={pedido.productos.imagen_url[0]} 
+                                alt="" 
+                                style={{width: '40px', height: '40px', objectFit: 'cover', borderRadius: '4px'}} 
+                                className="me-2"
+                              />
+                            )}
+                            <span className="fw-bold">{pedido.productos?.nombre_producto}</span>
+                          </div>
+                        </td>
+                        <td className="text-success fw-bold">${Number(pedido.precio_unitario).toFixed(2)}</td>
+                        <td>
+                          <Badge bg={getBadgeColor(pedido.id_estado)} className="px-3 py-2 text-uppercase shadow-sm">
+                            {getEstadoTexto(pedido.id_estado)}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              )}
+            </Card.Body>
+          </Card>
+        </Tab>
+      </Tabs>
     </Container>
   );
 };

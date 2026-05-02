@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Modal, Button, Row, Col, Badge, Spinner } from 'react-bootstrap';
 import { supabase } from '../../database/supabaseconfig';
 import { useAuth } from '../../context/AuthContext';
+import { enviarNotificacionPorCorreo } from '../../services/emailService';
 
 const CarritoModal = ({ mostrar, setMostrar, carrito, setCarrito, total }) => {
     const { user } = useAuth();
@@ -43,8 +44,9 @@ const CarritoModal = ({ mostrar, setMostrar, carrito, setCarrito, total }) => {
             setProcesando(true);
             
             // Obtener el perfil del comprador
-            const { data: perfilData } = await supabase.from('perfiles').select('perfil_id').eq('id_usuario', user.id).maybeSingle();
+            const { data: perfilData } = await supabase.from('perfiles').select('perfil_id, usuarios(username)').eq('id_usuario', user.id).maybeSingle();
             const perfilId = perfilData?.perfil_id;
+            const nombreComprador = perfilData?.usuarios?.username || 'Un comprador';
             
             if (!perfilId) throw new Error("Perfil de comprador no encontrado.");
             
@@ -68,6 +70,31 @@ const CarritoModal = ({ mostrar, setMostrar, carrito, setCarrito, total }) => {
             }));
             
             await supabase.from('pedidos').insert(pedidos);
+            
+            // 3. Enviar notificaciones a los vendedores
+            const tiendasIds = [...new Set(carrito.map(item => item.id_tienda).filter(Boolean))];
+            
+            for (const idTienda of tiendasIds) {
+                const { data: vendedorData } = await supabase
+                    .from('perfiles')
+                    .select('perfil_id, usuarios(email)')
+                    .eq('id_tienda', idTienda)
+                    .maybeSingle();
+                
+                if (vendedorData?.perfil_id) {
+                    const titulo = '¡Nuevo pedido recibido!';
+                    const msj = `${nombreComprador} acaba de realizar una compra en tu tienda. Revisa tu panel de ventas.`;
+                    await supabase.from('notificaciones').insert([{
+                        usuario_id: vendedorData.perfil_id,
+                        titulo: titulo,
+                        mensaje: msj
+                    }]);
+
+                    if (vendedorData.usuarios?.email) {
+                        enviarNotificacionPorCorreo(vendedorData.usuarios.email, titulo, msj);
+                    }
+                }
+            }
             
             vaciarCarrito();
             alert("¡Compra enviada a los vendedores! Revisa tus pedidos.");

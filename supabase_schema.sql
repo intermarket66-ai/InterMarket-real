@@ -11,6 +11,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE IF NOT EXISTS public.usuarios (
   id_usuario UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   username VARCHAR(100) UNIQUE NOT NULL,
+  email VARCHAR(255),
   rol VARCHAR(50) DEFAULT 'comprador' CHECK (rol IN ('comprador', 'vendedor', 'admin')),
   creado_en TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -146,8 +147,8 @@ CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
   -- 1. Insertar en la tabla usuarios
-  INSERT INTO public.usuarios (id_usuario, username, rol)
-  VALUES (new.id, split_part(new.email, '@', 1), 'comprador');
+  INSERT INTO public.usuarios (id_usuario, username, email, rol)
+  VALUES (new.id, split_part(new.email, '@', 1), new.email, 'comprador');
 
   -- 2. Insertar en la tabla perfiles vinculado al usuario creado
   INSERT INTO public.perfiles (id_usuario)
@@ -242,3 +243,52 @@ CREATE POLICY "Compradores insertan pedidos" ON public.pedidos FOR INSERT WITH C
 -- =============================================
 -- Habilitar tiempo real en la tabla de pedidos para que el dashboard del vendedor se actualice
 ALTER PUBLICATION supabase_realtime ADD TABLE public.pedidos;
+
+-- =============================================
+  -- 8. TABLA MENSAJES (CHATS)
+  -- =============================================
+  CREATE TABLE IF NOT EXISTS public.mensajes (
+    id_mensaje UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id_chat UUID REFERENCES public.chats(id_chat) ON DELETE CASCADE,
+    emisor_id UUID REFERENCES public.perfiles(perfil_id) ON DELETE CASCADE,
+    texto TEXT NOT NULL,
+    creado_en TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  );
+
+  ALTER TABLE public.mensajes ENABLE ROW LEVEL SECURITY;
+  CREATE POLICY "Mensajes visibles para todos (simplificado)" ON public.mensajes FOR SELECT USING (true);
+  CREATE POLICY "Mensajes insertables para todos (simplificado)" ON public.mensajes FOR INSERT WITH CHECK (true);
+
+  -- Habilitar tiempo real en mensajes
+  ALTER PUBLICATION supabase_realtime ADD TABLE public.mensajes;
+
+  -- =============================================
+  -- 9. TABLA NOTIFICACIONES
+  -- =============================================
+  CREATE TABLE IF NOT EXISTS public.notificaciones (
+    id_notificacion UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    usuario_id UUID REFERENCES public.perfiles(perfil_id) ON DELETE CASCADE,
+    titulo VARCHAR(100) NOT NULL,
+    mensaje TEXT NOT NULL,
+    leido BOOLEAN DEFAULT false,
+    creado_en TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  );
+
+  ALTER TABLE public.notificaciones ENABLE ROW LEVEL SECURITY;
+  CREATE POLICY "Usuarios ven sus notificaciones" ON public.notificaciones FOR SELECT USING (true);
+  CREATE POLICY "Usuarios insertan notificaciones" ON public.notificaciones FOR INSERT WITH CHECK (true);
+  CREATE POLICY "Usuarios actualizan notificaciones" ON public.notificaciones FOR UPDATE USING (true);
+
+  ALTER PUBLICATION supabase_realtime ADD TABLE public.notificaciones;
+
+  -- =============================================
+  -- 10. STORAGE PARA FOTOS DE PERFIL (AVATARES)
+  -- =============================================
+  -- Crear un bucket público llamado 'avatars'
+  INSERT INTO storage.buckets (id, name, public) VALUES ('avatars', 'avatars', true);
+
+  -- Permitir acceso público de lectura a las fotos
+  CREATE POLICY "Public Access" ON storage.objects FOR SELECT USING (bucket_id = 'avatars');
+
+  -- Permitir a los usuarios autenticados subir fotos
+  CREATE POLICY "Users can upload avatars" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'avatars' AND auth.role() = 'authenticated');

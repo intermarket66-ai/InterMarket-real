@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Button, Col, Container, Form, Row, Spinner } from "react-bootstrap";
 import { supabase } from "../database/supabaseconfig";
 import NotificacionOperacion from "../components/NotificacionOperacion";
+import { useAuth } from "../context/AuthContext";
+import { enviarNotificacionPorCorreo } from "../services/emailService";
 
 const Mensajes = () => {
     const [chats, setChats] = useState([]);
@@ -10,15 +12,30 @@ const Mensajes = () => {
     const [chatActivo, setChatActivo] = useState(null);
     const [toast, setToast] = useState({ mostrar: false, mensaje: "", tipo: "" });
 
+    const { user } = useAuth();
     const [textoMensaje, setTextoMensaje] = useState("");
-    const [mensajesLocales, setMensajesLocales] = useState({});
+    const [mensajes, setMensajes] = useState([]);
+    const [miPerfilId, setMiPerfilId] = useState(null);
+
+    // 1. Obtener mi Perfil ID
+    useEffect(() => {
+        const obtenerPerfilId = async () => {
+            if (!user) return;
+            const { data } = await supabase.from('perfiles').select('perfil_id').eq('id_usuario', user.id).maybeSingle();
+            if (data) setMiPerfilId(data.perfil_id);
+        };
+        obtenerPerfilId();
+    }, [user]);
 
     const cargarChats = async () => {
         try {
             setCargando(true);
+            if (!miPerfilId) return;
+
             const { data, error } = await supabase
                 .from("chats")
-                .select("*")
+                .select("*, productos(nombre_producto, imagen_url)")
+                .or(`comprador_id.eq.${miPerfilId},vendedor_id.eq.${miPerfilId}`)
                 .order("creado_en", { ascending: false });
 
             if (error) throw error;
@@ -32,8 +49,8 @@ const Mensajes = () => {
     };
 
     useEffect(() => {
-        cargarChats();
-    }, []);
+        if (miPerfilId) cargarChats();
+    }, [miPerfilId]);
 
     useEffect(() => {
         if (!chatActivo && chats.length > 0) {
@@ -68,44 +85,74 @@ const Mensajes = () => {
         }
     };
 
-    const obtenerMensajesChat = (chat) => {
-        if (!chat) return [];
-        if (mensajesLocales[chat.id_chat]) return mensajesLocales[chat.id_chat];
+    // 2. Cargar mensajes del chat activo y suscribirse a Realtime
+    useEffect(() => {
+        if (!chatActivo) {
+            setMensajes([]);
+            return;
+        }
 
-        const mensajesIniciales = [
-            {
-                id: `${chat.id_chat}-1`,
-                emisor: "otro",
-                texto: "Hola, el producto aun esta disponible?",
-                hora: "10:30"
-            },
-            {
-                id: `${chat.id_chat}-2`,
-                emisor: "yo",
-                texto: "Si, esta disponible. Te interesa?",
-                hora: "10:31"
-            }
-        ];
-        return mensajesIniciales;
-    };
-
-    const enviarMensaje = () => {
-        if (!chatActivo || !textoMensaje.trim()) return;
-        const mensajeNuevo = {
-            id: `${chatActivo.id_chat}-${Date.now()}`,
-            emisor: "yo",
-            texto: textoMensaje.trim(),
-            hora: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        const cargarMensajes = async () => {
+            const { data, error } = await supabase
+                .from("mensajes")
+                .select("*")
+                .eq("id_chat", chatActivo.id_chat)
+                .order("creado_en", { ascending: true });
+            
+            if (data) setMensajes(data);
         };
 
-        setMensajesLocales((prev) => {
-            const actuales = obtenerMensajesChat(chatActivo);
-            return {
-                ...prev,
-                [chatActivo.id_chat]: [...actuales, mensajeNuevo]
-            };
-        });
-        setTextoMensaje("");
+        cargarMensajes();
+
+        const channel = supabase.channel(`mensajes_chat_${chatActivo.id_chat}`)
+            .on(
+                'postgres_changes',
+                { event: 'INSERT', schema: 'public', table: 'mensajes', filter: `id_chat=eq.${chatActivo.id_chat}` },
+                (payload) => {
+                    setMensajes((prev) => [...prev, payload.new]);
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [chatActivo]);
+
+    const enviarMensaje = async () => {
+        if (!chatActivo || !textoMensaje.trim() || !miPerfilId) return;
+        
+        const texto = textoMensaje.trim();
+        setTextoMensaje(""); // Limpiar optimista
+
+        const { error } = await supabase
+            .from("mensajes")
+            .insert([{
+                id_chat: chatActivo.id_chat,
+                emisor_id: miPerfilId,
+                texto: texto
+            }]);
+
+        if (error) {
+            setToast({ mostrar: true, mensaje: "Error al enviar mensaje.", tipo: "error" });
+        } else {
+            // 3. Crear notificación para el receptor
+            const receptorId = chatActivo.vendedor_id === miPerfilId ? chatActivo.comprador_id : chatActivo.vendedor_id;
+            if (receptorId) {
+                const titulo = 'Nuevo mensaje';
+                const msjAviso = `Tienes un nuevo mensaje en el chat.`;
+                await supabase.from('notificaciones').insert([{
+                    usuario_id: receptorId,
+                    titulo: titulo,
+                    mensaje: msjAviso
+                }]);
+
+                const { data: receptorData } = await supabase.from('perfiles').select('usuarios(email)').eq('perfil_id', receptorId).maybeSingle();
+                if (receptorData?.usuarios?.email) {
+                    enviarNotificacionPorCorreo(receptorData.usuarios.email, titulo, msjAviso);
+                }
+            }
+        }
     };
 
     return (
@@ -153,8 +200,8 @@ const Mensajes = () => {
                                                 <strong>{`Chat ${chat.id_chat.slice(0, 8)}`}</strong>
                                                 <small>{new Date(chat.creado_en).toLocaleDateString()}</small>
                                             </div>
-                                            <small className="text-muted">
-                                                Producto: {chat.producto_id?.slice(0, 10)}...
+                                            <small className="text-muted text-truncate" style={{ display: 'block', maxWidth: '200px' }}>
+                                                {chat.productos?.nombre_producto || `Producto: ${chat.producto_id?.slice(0, 10)}...`}
                                             </small>
                                         </div>
                                         <Button
@@ -193,17 +240,20 @@ const Mensajes = () => {
                                 </header>
 
                                 <div className="mensajes-chat-cuerpo">
-                                    {obtenerMensajesChat(chatActivo).map((mensaje) => (
-                                        <div
-                                            key={mensaje.id}
-                                            className={`burbuja-wrapper ${mensaje.emisor === "yo" ? "yo" : "otro"}`}
-                                        >
-                                            <div className="burbuja-mensaje">
-                                                <p>{mensaje.texto}</p>
-                                                <small>{mensaje.hora}</small>
+                                    {mensajes.map((mensaje) => {
+                                        const esMio = mensaje.emisor_id === miPerfilId;
+                                        return (
+                                            <div
+                                                key={mensaje.id_mensaje}
+                                                className={`burbuja-wrapper ${esMio ? "yo" : "otro"}`}
+                                            >
+                                                <div className="burbuja-mensaje">
+                                                    <p>{mensaje.texto}</p>
+                                                    <small>{new Date(mensaje.creado_en).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small>
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
 
                                 <footer className="mensajes-chat-footer">

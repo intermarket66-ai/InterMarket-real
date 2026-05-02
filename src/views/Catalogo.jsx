@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Badge, Spinner, Button, Form, InputGroup } from 'react-bootstrap';
 import { supabase } from '../database/supabaseconfig';
 import CarritoModal from '../components/catalogo/CarritoModal';
+import ModalMensaje from '../components/catalogo/ModalMensaje';
 import { useAuth } from '../context/AuthContext';
 
 function Catalogo() {
@@ -11,6 +12,13 @@ function Catalogo() {
     const [carrito, setCarrito] = useState([]);
     const [mostrarCarrito, setMostrarCarrito] = useState(false);
     const [busqueda, setBusqueda] = useState('');
+    const [mostrarModalMensaje, setMostrarModalMensaje] = useState(false);
+    const [productoSeleccionado, setProductoSeleccionado] = useState(null);
+
+    const abrirModalContacto = (producto) => {
+        setProductoSeleccionado(producto);
+        setMostrarModalMensaje(true);
+    };
 
     // Cargar productos y carrito + escuchar evento del encabezado
     useEffect(() => {
@@ -202,13 +210,23 @@ function Catalogo() {
                                             )}
                                         </div>
 
-                                        <Button 
-                                            variant="outline-primary" 
-                                            className="w-100 fw-bold rounded-pill"
-                                            onClick={() => agregarAlCarrito(producto)}
-                                        >
-                                            <i className="bi bi-cart-plus me-2"></i>Añadir
-                                        </Button>
+                                        <div className="d-flex gap-2">
+                                            <Button 
+                                                variant="outline-secondary" 
+                                                className="fw-bold rounded-pill"
+                                                onClick={() => abrirModalContacto(producto)}
+                                                title="Contactar al vendedor"
+                                            >
+                                                <i className="bi bi-chat-dots"></i>
+                                            </Button>
+                                            <Button 
+                                                variant="outline-primary" 
+                                                className="w-100 fw-bold rounded-pill"
+                                                onClick={() => agregarAlCarrito(producto)}
+                                            >
+                                                <i className="bi bi-cart-plus me-2"></i>Añadir
+                                            </Button>
+                                        </div>
                                     </div>
                                 </Card.Body>
                             </Card>
@@ -224,6 +242,13 @@ function Catalogo() {
                 carrito={carrito}
                 setCarrito={setCarrito}
                 total={totalCarrito}
+            />
+
+            {/* Modal de Mensaje */}
+            <ModalMensaje 
+                mostrar={mostrarModalMensaje}
+                setMostrar={setMostrarModalMensaje}
+                producto={productoSeleccionado}
             />
         </Container>
     );

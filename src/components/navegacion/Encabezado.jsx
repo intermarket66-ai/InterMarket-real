@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Container, Nav, Navbar, Offcanvas } from "react-bootstrap";
+import { Container, Nav, Navbar, Offcanvas, Dropdown, Badge } from "react-bootstrap";
 import logo from "../../assets/icono_intermAeview.png";
 import { supabase } from "../../database/supabaseconfig";
 import { useAuth } from "../../context/AuthContext";
@@ -12,6 +12,59 @@ const Encabezado = () => {
   const navigate = useNavigate();
   const location = useLocation(); // Para detectar la ruta actual
   const { user, role, signOut } = useAuth();
+
+  const [notificaciones, setNotificaciones] = useState([]);
+  const [noLeidas, setNoLeidas] = useState(0);
+
+  // Cargar notificaciones
+  useEffect(() => {
+    if (!user) return;
+    
+    let perfilId;
+    
+    const cargarNotificaciones = async () => {
+      const { data: perfilData } = await supabase.from('perfiles').select('perfil_id').eq('id_usuario', user.id).maybeSingle();
+      if (!perfilData) return;
+      perfilId = perfilData.perfil_id;
+      
+      const { data } = await supabase
+        .from('notificaciones')
+        .select('*')
+        .eq('usuario_id', perfilId)
+        .order('creado_en', { ascending: false })
+        .limit(10);
+        
+      if (data) {
+        setNotificaciones(data);
+        setNoLeidas(data.filter(n => !n.leido).length);
+      }
+    };
+    
+    cargarNotificaciones();
+    
+    const channel = supabase.channel('notificaciones_navbar')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notificaciones' }, payload => {
+        // En un entorno de producción, filtrar con RLS o en el channel, aquí validamos localmente:
+        // Pero como no tenemos el id del usuario en la notificación directamente sino el perfil_id,
+        // simplemente recargamos si no coincide, o asumimos que el RLS detiene eventos ajenos.
+        // Dado que Supabase Realtime no filtra RLS por defecto si no lo configuramos, recargaremos:
+        cargarNotificaciones();
+      })
+      .subscribe();
+      
+      return () => supabase.removeChannel(channel);
+  }, [user]);
+
+  const marcarComoLeidas = async () => {
+      if (noLeidas === 0) return;
+      setNoLeidas(0);
+      
+      const noLeidasIds = notificaciones.filter(n => !n.leido).map(n => n.id_notificacion);
+      if (noLeidasIds.length === 0) return;
+      
+      setNotificaciones(prev => prev.map(n => ({...n, leido: true})));
+      await supabase.from('notificaciones').update({ leido: true }).in('id_notificacion', noLeidasIds);
+  };
 
   const manejarToggle = () => setMostrarMenu(!mostrarMenu);
 
@@ -131,6 +184,14 @@ const Encabezado = () => {
                 {mostrarMenu ? <i className="bi-images me-2"></i> : null}
                 <strong>Catálogo</strong>
               </Nav.Link>
+
+              <Nav.Link
+                onClick={() => manejarNavegacion("/perfil")}
+                className={mostrarMenu ? "color-texto-marca" : "text-dark"}
+              >
+                {mostrarMenu ? <i className="bi-person-lines-fill me-2"></i> : null}
+                <strong>Mi Perfil</strong>
+              </Nav.Link>
             </>
           )}
 
@@ -198,6 +259,41 @@ const Encabezado = () => {
           </strong>
         </Navbar.Brand>
 
+        {/* Contenedor de iconos derecha (Notificaciones + Carrito) */}
+        <div className="d-flex align-items-center ms-auto me-md-2">
+          
+          {/* Campanita de Notificaciones */}
+          {user && !esLogin && (
+            <Dropdown align="end" className="me-2" onToggle={(isOpen) => { if (isOpen) marcarComoLeidas(); }}>
+              <Dropdown.Toggle variant="outline-dark" className="border-0 bg-transparent text-dark p-2 position-relative shadow-none">
+                <i className="bi bi-bell-fill fs-5"></i>
+                {noLeidas > 0 && (
+                  <Badge bg="danger" className="position-absolute top-0 start-50 translate-middle rounded-pill" style={{fontSize: '0.65rem'}}>
+                    {noLeidas}
+                  </Badge>
+                )}
+              </Dropdown.Toggle>
+              <Dropdown.Menu className="shadow-lg border-0" style={{ minWidth: '300px', maxHeight: '400px', overflowY: 'auto' }}>
+                <Dropdown.Header className="fw-bold bg-light border-bottom text-dark">Notificaciones</Dropdown.Header>
+                {notificaciones.length === 0 ? (
+                  <Dropdown.Item className="text-muted text-center py-3">No tienes notificaciones nuevas</Dropdown.Item>
+                ) : (
+                  notificaciones.map(noti => (
+                    <Dropdown.Item key={noti.id_notificacion} className={`border-bottom py-2 text-wrap ${!noti.leido ? 'bg-light' : ''}`}>
+                      <div className="d-flex justify-content-between align-items-center mb-1">
+                        <strong className={!noti.leido ? 'text-primary' : 'text-dark'}>{noti.titulo}</strong>
+                        <small className="text-muted" style={{fontSize: '0.7rem'}}>
+                          {new Date(noti.creado_en).toLocaleDateString()}
+                        </small>
+                      </div>
+                      <p className="mb-0 text-muted" style={{fontSize: '0.85rem'}}>{noti.mensaje}</p>
+                    </Dropdown.Item>
+                  ))
+                )}
+              </Dropdown.Menu>
+            </Dropdown>
+          )}
+
         {/* Botón del Carrito - Solo para compradores */}
 {!esLogin && role === 'comprador' && (
   <button
@@ -227,6 +323,7 @@ const Encabezado = () => {
     )}
   </button>
 )}
+        </div>
 
         {/* Menú lateral */}
         <Navbar.Offcanvas

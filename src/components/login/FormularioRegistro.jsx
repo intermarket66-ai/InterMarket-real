@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Form, Button, Alert, InputGroup } from 'react-bootstrap';
 
-const FormularioRegistro = ({ correo, contraseña, confirmarContraseña, error, exito, setCorreo, setContraseña, setConfirmarContraseña, registrarUsuario, cargando }) => {
+const FormularioRegistro = ({ correo, contraseña, confirmarContraseña, error, exito, setCorreo, setContraseña, setConfirmarContraseña, registrarUsuario, registrarConGoogle, cargando }) => {
   const [mostrarContraseña, setMostrarContraseña] = useState(false);
 
   return (
@@ -62,10 +62,26 @@ const FormularioRegistro = ({ correo, contraseña, confirmarContraseña, error, 
         </InputGroup>
       </Form.Group>
 
-      <Button type="submit" className="unique-login-btn w-100 shadow" disabled={cargando}>
+      <Button type="submit" className="unique-login-btn w-100 shadow mb-3" disabled={cargando}>
         {cargando ? (
           <><span className="spinner-border spinner-border-sm me-2"></span> Registrando...</>
         ) : 'Crear Cuenta'}
+      </Button>
+
+      <div className="d-flex align-items-center mb-3">
+        <hr className="flex-grow-1 text-muted" />
+        <span className="px-3 text-muted small">o</span>
+        <hr className="flex-grow-1 text-muted" />
+      </div>
+
+      <Button 
+        type="button" 
+        variant="outline-dark" 
+        className="w-100 shadow-sm d-flex justify-content-center align-items-center mb-2" 
+        onClick={registrarConGoogle}
+        disabled={cargando}
+      >
+        <i className="bi bi-google me-2 text-danger"></i> Registrarse con Google
       </Button>
     </Form>
   );

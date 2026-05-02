@@ -44,9 +44,26 @@ const Tiendas = () => {
     const cargarTiendas = async () => {
         try {
             setCargando(true);
+            if (!user) return;
+
+            // 1. Obtener el id_tienda del perfil del usuario logueado
+            const { data: perfilData } = await supabase
+                .from('perfiles')
+                .select('id_tienda')
+                .eq('id_usuario', user.id)
+                .maybeSingle();
+
+            if (!perfilData || !perfilData.id_tienda) {
+                setTiendas([]);
+                setCargando(false);
+                return;
+            }
+
+            // 2. Cargar solo la tienda que le pertenece
             const { data, error } = await supabase
                 .from("tiendas")
                 .select("*")
+                .eq("id_tienda", perfilData.id_tienda)
                 .order("creado_en", { ascending: false });
             if (error) throw error;
             setTiendas(data || []);
