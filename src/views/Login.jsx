@@ -4,7 +4,7 @@ import { Container, Card, Row, Col } from 'react-bootstrap';
 import FormularioLogin from '../components/login/FormularioLogin';
 import { supabase } from "../database/supabaseconfig";
 import { useAuth } from "../context/AuthContext";
-import logo from "../assets/icono_intermAeview.png"; // Tu logo actualizado
+import logo from "../assets/icono_intermAeview.png";
 import "../App.css";
 
 function Login() {
@@ -29,7 +29,6 @@ function Login() {
         return;
       }
       if (data.user) {
-        // Forzamos limpiar el rol anterior para que deba elegir de nuevo
         localStorage.removeItem("rol-activo");
         navegar("/seleccion-rol");
       }

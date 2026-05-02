@@ -12,10 +12,10 @@ const FormularioRegistro = ({ correo, contraseña, confirmarContraseña, error, 
       <Form.Group className="mb-3">
         <InputGroup className="unique-input-group">
           <InputGroup.Text>
-            <i className="bi bi-envelope"></i>
+            <i className="bi bi-person-circle"></i>
           </InputGroup.Text>
           <Form.Control
-            type="email"
+            type="text"
             placeholder="Correo electrónico"
             value={correo}
             onChange={(e) => setCorreo(e.target.value)}
@@ -31,15 +31,14 @@ const FormularioRegistro = ({ correo, contraseña, confirmarContraseña, error, 
           </InputGroup.Text>
           <Form.Control
             type={mostrarContraseña ? 'text' : 'password'}
-            placeholder="Contraseña (mín. 6 caracteres)"
+            placeholder="Contraseña"
             value={contraseña}
             onChange={(e) => setContraseña(e.target.value)}
             required
-            minLength={6}
           />
           <InputGroup.Text 
             onClick={() => setMostrarContraseña(!mostrarContraseña)} 
-            style={{cursor: 'pointer'}}
+            className="cursor-pointer"
           >
             <i className={`bi ${mostrarContraseña ? 'bi-eye-slash' : 'bi-eye'}`}></i>
           </InputGroup.Text>
@@ -49,7 +48,7 @@ const FormularioRegistro = ({ correo, contraseña, confirmarContraseña, error, 
       <Form.Group className="mb-4">
         <InputGroup className="unique-input-group">
           <InputGroup.Text>
-            <i className="bi bi-shield-check"></i>
+            <i className="bi bi-shield-lock-fill"></i>
           </InputGroup.Text>
           <Form.Control
             type={mostrarContraseña ? 'text' : 'password'}
@@ -57,7 +56,6 @@ const FormularioRegistro = ({ correo, contraseña, confirmarContraseña, error, 
             value={confirmarContraseña}
             onChange={(e) => setConfirmarContraseña(e.target.value)}
             required
-            minLength={6}
           />
         </InputGroup>
       </Form.Group>
@@ -81,7 +79,7 @@ const FormularioRegistro = ({ correo, contraseña, confirmarContraseña, error, 
         onClick={registrarConGoogle}
         disabled={cargando}
       >
-        <i className="bi bi-google me-2 text-danger"></i> Registrarse con Google
+        <i className="bi bi-google me-2 text-danger"></i> Continuar con Google
       </Button>
     </Form>
   );

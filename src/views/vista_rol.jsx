@@ -20,41 +20,44 @@ const VistaRol = () => {
   return (
     <section className="rol-page-bg">
       <div className="rol-wrapper">
-        <p className="rol-tagline">Mercado de Tiendas</p>
-        <h1 className="rol-title">Bienvenido a InterMarket</h1>
-        <p className="rol-subtitle">
-          Selecciona como quieres usar la plataforma en esta sesion.
-        </p>
+        <div className="text-center mb-5">
+            <span className="text-uppercase fw-bold text-muted small ls-2 mb-2 d-block">Bienvenido de nuevo</span>
+            <h1 className="rol-title">¿Cómo quieres continuar hoy?</h1>
+            <p className="rol-subtitle text-center">
+              Selecciona tu rol para personalizar tu experiencia en InterMarket.
+            </p>
+        </div>
 
         <div className="rol-grid">
-          <button
-            type="button"
+          <div
             className="rol-card"
             onClick={() => handleRoleSelection("comprador")}
           >
-            <span className="rol-icon">
-              <i className="bi bi-bag-check-fill" />
-            </span>
-            <h2>Quiero comprar</h2>
-            <p>Explora categorias, revisa productos y encuentra ofertas.</p>
-          </button>
+            <div className="rol-icon">
+              <i className="bi bi-bag-heart" />
+            </div>
+            <h2>Comprador</h2>
+            <p>Explora el catálogo, encuentra las mejores ofertas y gestiona tus compras con facilidad.</p>
+          </div>
 
-          <button
-            type="button"
+          <div
             className="rol-card"
             onClick={() => handleRoleSelection("vendedor")}
           >
-            <span className="rol-icon">
-              <i className="bi bi-shop-window" />
-            </span>
-            <h2>Quiero vender</h2>
-            <p>Publica articulos, administra inventario y gestiona ventas.</p>
-          </button>
+            <div className="rol-icon">
+              <i className="bi bi-shop" />
+            </div>
+            <h2>Vendedor</h2>
+            <p>Administra tu inventario, publica nuevos productos y lleva el control total de tus ventas.</p>
+          </div>
         </div>
 
-        <button type="button" className="rol-logout" onClick={cerrarSesion}>
-          Cerrar sesion
-        </button>
+        <div className="text-center">
+            <button type="button" className="rol-logout" onClick={cerrarSesion}>
+              <i className="bi bi-box-arrow-left me-2"></i>
+              Cerrar sesión
+            </button>
+        </div>
       </div>
     </section>
   );

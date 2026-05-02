@@ -36,21 +36,17 @@ function Catalogo() {
         setMostrarModalPostCompra(true);
     };
 
-    // Cargar productos y carrito + escuchar evento del encabezado
     useEffect(() => {
         cargarProductos();
         
         const carritoGuardado = JSON.parse(localStorage.getItem('carrito') || '[]');
         setCarrito(carritoGuardado);
 
-        // Escuchar evento para abrir el carrito desde el Encabezado
         const handleAbrirCarrito = () => {
             setMostrarCarrito(true);
         };
 
         window.addEventListener("abrirCarrito", handleAbrirCarrito);
-
-        // Cleanup del listener
         return () => {
             window.removeEventListener("abrirCarrito", handleAbrirCarrito);
         };
@@ -66,7 +62,6 @@ function Catalogo() {
                     *,
                     categorias (nombre_categoria)
                 `)
-                // .eq("id_estado", 1)        ← Descomenta cuando quieras filtrar
                 .order("creado_en", { ascending: false });
 
             if (error) {
@@ -82,7 +77,6 @@ function Catalogo() {
         }
     };
 
-    // Agregar al carrito
     const agregarAlCarrito = (producto) => {
         const existe = carrito.find(item => item.id_producto === producto.id_producto);
 
@@ -99,195 +93,189 @@ function Catalogo() {
         setCarrito(nuevoCarrito);
         localStorage.setItem('carrito', JSON.stringify(nuevoCarrito));
 
-        // Notificación toast
+        // Toast notification (premium style)
         const toast = document.createElement('div');
-        toast.className = 'position-fixed bottom-0 end-0 p-3';
+        toast.className = 'position-fixed bottom-0 end-0 p-4';
         toast.style.zIndex = '9999';
         toast.innerHTML = `
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="bi bi-cart-check"></i> ${producto.nombre_producto} añadido al carrito
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <div class="alert shadow-lg border-0 d-flex align-items-center" style="background: var(--color-primario); color: white; border-radius: 12px; min-width: 300px;">
+                <i class="bi bi-cart-check-fill fs-4 me-3"></i>
+                <div>
+                    <strong class="d-block">Añadido al carrito</strong>
+                    <small class="opacity-75">${producto.nombre_producto}</small>
+                </div>
+                <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="alert"></button>
             </div>
         `;
         document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 2500);
+        setTimeout(() => {
+            toast.classList.add('fade');
+            setTimeout(() => toast.remove(), 500);
+        }, 3000);
     };
 
-    // Calcular total del carrito
     const totalCarrito = carrito.reduce((total, item) => {
         return total + (parseFloat(item.precio_venta || 0) * (item.cantidad || 1));
     }, 0);
 
     return (
-        <Container>
-            <br />
-            <br />
-            <br />
-            <br />
-
-            <Row className="mb-4 align-items-center">
-                <Col md={4} xs={12} className="mb-3 mb-md-0">
-                    <h2 className="m-0 text-primary">
-                        <i className="bi bi-shop me-2"></i>
-                        Catálogo
-                    </h2>
-                </Col>
-                <Col md={5} xs={12} className="mb-3 mb-md-0">
-                    <InputGroup>
-                        <InputGroup.Text className="bg-white"><i className="bi bi-search"></i></InputGroup.Text>
-                        <Form.Control 
-                            placeholder="Buscar productos..." 
-                            value={busqueda} 
-                            onChange={(e) => setBusqueda(e.target.value)} 
-                        />
-                    </InputGroup>
-                </Col>
-                <Col md={3} xs={12} className="text-md-end">
-                    <Button 
-                        variant="primary" 
-                        size="md"
-                        className="w-100 w-md-auto shadow-sm"
-                        style={{ backgroundColor: 'var(--color-primario)', borderColor: 'var(--color-primario)' }}
-                        onClick={() => setMostrarCarrito(true)}
-                        disabled={carrito.length === 0}
-                    >
-                        <i className="bi bi-cart-fill me-2"></i>
-                        Ver Carrito ({carrito.length})
-                    </Button>
-                </Col>
-            </Row>
-
-            {/* Banner de Ofertas (Estilo Figma) */}
-            <div 
-              className="mb-4 rounded px-4 py-3 d-flex justify-content-between align-items-center shadow-sm text-white" 
-              style={{ background: 'var(--color-oferta)' }}
-            >
-              <div>
-                <h4 className="m-0 fw-bold"><i className="bi bi-tag-fill me-2"></i>Semana de ofertas</h4>
-                <p className="m-0 text-white-50 small d-none d-sm-block">Aprovecha los mejores descuentos en tecnología y más</p>
-              </div>
-              <div 
-                className="bg-white text-dark px-3 py-2 rounded fw-bold shadow-sm" 
-                style={{ cursor: 'pointer', transition: 'all 0.2s' }}
-                onClick={() => setMostrarSoloOfertas(!mostrarSoloOfertas)}
-              >
-                {mostrarSoloOfertas ? (
-                    <><i className="bi bi-grid-fill me-2 text-primary"></i>Ver catálogo completo</>
-                ) : (
-                    <><i className="bi bi-percent me-2 text-danger"></i>Ver solo ofertas</>
-                )}
-              </div>
-            </div>
-
-            {cargando ? (
-                <div className="text-center my-5">
-                    <Spinner animation="border" variant="success" size="lg" />
-                    <p className="mt-3">Cargando catálogo...</p>
-                </div>
-            ) : productos.length === 0 ? (
-                <Row className="text-center my-5">
-                    <Col>
-                        <p className="text-muted">No hay productos disponibles en el catálogo.</p>
-                        <p className="small text-muted">Verifica que existan productos con id_estado = 1 (Entregado)</p>
+        <Container className="pb-5">
+            <div className="pt-5 mt-4">
+                <Row className="mb-5 align-items-end">
+                    <Col lg={4} md={12} className="mb-4 mb-lg-0">
+                        <h1 className="display-5 fw-800 mb-2" style={{ color: 'var(--color-primario)' }}>
+                            Descubre
+                        </h1>
+                        <p className="text-muted mb-0">Explora los mejores productos de nuestra comunidad.</p>
+                    </Col>
+                    <Col lg={5} md={8} className="mb-3 mb-md-0">
+                        <InputGroup className="unique-input-group shadow-sm">
+                            <InputGroup.Text className="bg-transparent border-0 pe-0">
+                                <i className="bi bi-search text-muted"></i>
+                            </InputGroup.Text>
+                            <Form.Control 
+                                className="bg-transparent border-0 py-3"
+                                placeholder="¿Qué estás buscando hoy?" 
+                                value={busqueda} 
+                                onChange={(e) => setBusqueda(e.target.value)} 
+                            />
+                        </InputGroup>
+                    </Col>
+                    <Col lg={3} md={4} className="text-md-end">
+                        <Button 
+                            variant="primary" 
+                            className="w-100 py-3 shadow-md fw-bold"
+                            onClick={() => setMostrarCarrito(true)}
+                            disabled={carrito.length === 0}
+                        >
+                            <i className="bi bi-bag-check me-2"></i>
+                            Carrito ({carrito.length})
+                        </Button>
                     </Col>
                 </Row>
-            ) : (
-                <Row>
-                    {productos
-                        .filter(p => p.nombre_producto?.toLowerCase().includes(busqueda.toLowerCase()) || p.categorias?.nombre_categoria?.toLowerCase().includes(busqueda.toLowerCase()))
-                        .filter(p => !mostrarSoloOfertas || (p.precio_original && p.precio_original > p.precio_venta))
-                        .map((producto) => (
-                        <Col key={producto.id_producto} xs={6} sm={6} md={4} lg={3} className="mb-4">
-                            <Card className="h-100 shadow-sm border-0 product-card-hover">
-                                {producto.imagen_url && producto.imagen_url.length > 0 ? (
+
+                {/* Promotional Banner */}
+                <div 
+                  className="mb-5 rounded-xl p-4 p-md-5 d-flex flex-column flex-md-row justify-content-between align-items-center shadow-md position-relative overflow-hidden" 
+                  style={{ background: 'linear-gradient(135deg, #0f4c5c 0%, #1a7a8a 100%)', borderRadius: '24px' }}
+                >
+                  <div className="position-relative z-1 text-center text-md-start mb-4 mb-md-0">
+                    <Badge bg="accent" className="mb-3 px-3 py-2 text-uppercase ls-1" style={{ background: 'var(--color-accent)' }}>Destacado</Badge>
+                    <h2 className="text-white fw-800 mb-2 fs-1">Semana de Ofertas</h2>
+                    <p className="text-white-50 mb-0 fs-5">Aprovecha descuentos exclusivos en toda la tienda.</p>
+                  </div>
+                  <div className="position-relative z-1">
+                    <Button 
+                        variant="light" 
+                        className="rounded-pill px-4 py-3 fw-bold shadow-sm"
+                        onClick={() => setMostrarSoloOfertas(!mostrarSoloOfertas)}
+                    >
+                        {mostrarSoloOfertas ? (
+                            <><i className="bi bi-grid-3x3-gap me-2"></i>Ver todo</>
+                        ) : (
+                            <><i className="bi bi-percent me-2 text-danger"></i>Filtrar Ofertas</>
+                        )}
+                    </Button>
+                  </div>
+                  {/* Decorative Elements */}
+                  <div className="position-absolute" style={{ width: '300px', height: '300px', background: 'rgba(255,255,255,0.05)', borderRadius: '50%', top: '-100px', right: '-100px' }}></div>
+                </div>
+
+                {cargando ? (
+                    <div className="text-center py-5">
+                        <Spinner animation="grow" variant="primary" />
+                        <p className="mt-3 text-muted fw-500">Preparando el catálogo...</p>
+                    </div>
+                ) : productos.length === 0 ? (
+                    <div className="text-center py-5 bg-white rounded-xl shadow-sm border">
+                        <i className="bi bi-box-seam display-1 text-light mb-4 d-block"></i>
+                        <h3 className="text-muted">No se encontraron productos</h3>
+                        <p className="text-muted opacity-75">Vuelve más tarde para ver nuevas novedades.</p>
+                    </div>
+                ) : (
+                    <Row className="g-4">
+                        {productos
+                            .filter(p => p.nombre_producto?.toLowerCase().includes(busqueda.toLowerCase()) || p.categorias?.nombre_categoria?.toLowerCase().includes(busqueda.toLowerCase()))
+                            .filter(p => !mostrarSoloOfertas || (p.precio_original && p.precio_original > p.precio_venta))
+                            .map((producto) => (
+                            <Col key={producto.id_producto} xs={6} md={4} lg={3}>
+                                <Card className="h-100 border-0 shadow-sm product-card-hover bg-white">
                                     <div 
-                                        className="position-relative overflow-hidden ratio ratio-4x3 bg-light" 
+                                        className="position-relative overflow-hidden ratio ratio-1x1" 
                                         style={{ cursor: 'pointer' }}
                                         onClick={() => abrirModalDetalles(producto)}
                                     >
-                                        <div>
-                                            <Card.Img
-                                                variant="top"
-                                                src={producto.imagen_url[0]}
-                                                alt={producto.nombre_producto}
-                                                className="w-100 h-100"
-                                                style={{ objectFit: 'cover' }}
-                                                onError={(e) => e.target.src = 'https://via.placeholder.com/200x150?text=Sin+Imagen'}
-                                            />
-                                            {producto.precio_original > producto.precio_venta && (
-                                                <Badge bg="danger" className="position-absolute top-0 end-0 m-2 px-2 py-1 shadow-sm" style={{ width: 'auto', height: 'auto' }}>
-                                                    ¡Oferta!
+                                        <Card.Img
+                                            variant="top"
+                                            src={producto.imagen_url?.[0] || 'https://via.placeholder.com/400?text=Sin+Imagen'}
+                                            alt={producto.nombre_producto}
+                                            className="w-100 h-100 object-fit-cover"
+                                            onError={(e) => e.target.src = 'https://via.placeholder.com/400?text=Error'}
+                                        />
+                                        {producto.precio_original > producto.precio_venta && (
+                                            <div className="position-absolute top-0 start-0 m-3">
+                                                <Badge bg="danger" className="px-2 py-1 shadow-sm">
+                                                    -{Math.round((1 - producto.precio_venta / producto.precio_original) * 100)}%
                                                 </Badge>
-                                            )}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <Card.Body className="d-flex flex-column p-3 p-md-4">
+                                        <div className="mb-2">
+                                            <span className="text-uppercase text-muted fw-700" style={{ fontSize: '10px', letterSpacing: '1px' }}>
+                                                {producto.categorias?.nombre_categoria || 'General'}
+                                            </span>
                                         </div>
-                                    </div>
-                                ) : (
-                                    <div className="bg-light d-flex align-items-center justify-content-center ratio ratio-4x3" style={{ cursor: 'pointer' }}>
-                                        <i className="bi bi-image text-muted" style={{ fontSize: '3rem' }}></i>
-                                    </div>
-                                )}
+                                        
+                                        <Card.Title 
+                                            className="fw-bold mb-3 fs-5 text-dark" 
+                                            style={{ cursor: 'pointer', lineHeight: '1.2', height: '2.4em', overflow: 'hidden' }}
+                                            onClick={() => abrirModalDetalles(producto)}
+                                        >
+                                            {producto.nombre_producto}
+                                        </Card.Title>
 
-                                <Card.Body className="d-flex flex-column">
-                                    <Card.Title 
-                                        className="text-truncate fw-bold mb-1 fs-6" 
-                                        title={producto.nombre_producto}
-                                        style={{ cursor: 'pointer' }}
-                                        onClick={() => abrirModalDetalles(producto)}
-                                    >
-                                        {producto.nombre_producto}
-                                    </Card.Title>
+                                        <div className="mt-auto">
+                                            <div className="d-flex align-items-center mb-3">
+                                                <span className="fs-4 fw-800 text-dark me-2">
+                                                    ${parseFloat(producto.precio_venta || 0).toFixed(2)}
+                                                </span>
+                                                {producto.precio_original > producto.precio_venta && (
+                                                    <span className="text-decoration-line-through text-muted small">
+                                                        ${parseFloat(producto.precio_original).toFixed(2)}
+                                                    </span>
+                                                )}
+                                            </div>
 
-                                    <div className="mb-2">
-                                        <Badge bg="light" text="dark" className="me-2 border">
-                                            {producto.categorias?.nombre_categoria || 'Sin categoría'}
-                                        </Badge>
-                                    </div>
-
-                                    <Card.Text className="text-muted small mb-2 flex-grow-1 d-none d-sm-block">
-                                        {producto.descripcion?.length > 70 
-                                            ? `${producto.descripcion.substring(0, 70)}...` 
-                                            : producto.descripcion || 'Sin descripción'}
-                                    </Card.Text>
-
-                                    <div className="mt-auto">
-                                        <div className="mb-2 bg-light p-1 p-sm-2 rounded text-center">
-                                            {producto.precio_original > producto.precio_venta ? (
-                                                <>
-                                                    <span className="text-decoration-line-through text-muted small me-1 d-block d-sm-inline">${parseFloat(producto.precio_original).toFixed(2)}</span>
-                                                    <span className="fw-bold fs-6 fs-sm-5 text-danger">${parseFloat(producto.precio_venta || 0).toFixed(2)}</span>
-                                                </>
-                                            ) : (
-                                                <span className="fw-bold fs-6 fs-sm-5 text-success">${parseFloat(producto.precio_venta || 0).toFixed(2)}</span>
-                                            )}
+                                            <div className="d-flex gap-2">
+                                                <Button 
+                                                    variant="outline-secondary" 
+                                                    className="rounded-pill p-2 flex-shrink-0"
+                                                    onClick={() => abrirModalContacto(producto)}
+                                                    style={{ width: '42px', height: '42px' }}
+                                                >
+                                                    <i className="bi bi-chat-text"></i>
+                                                </Button>
+                                                <Button 
+                                                    variant="primary" 
+                                                    className="w-100 fw-bold rounded-pill"
+                                                    onClick={() => agregarAlCarrito(producto)}
+                                                >
+                                                    <i className="bi bi-plus-lg me-2"></i>
+                                                    Añadir
+                                                </Button>
+                                            </div>
                                         </div>
+                                    </Card.Body>
+                                </Card>
+                            </Col>
+                        ))}
+                    </Row>
+                )}
+            </div>
 
-                                        <div className="d-flex gap-1 gap-sm-2">
-                                            <Button 
-                                                variant="outline-secondary" 
-                                                className="fw-bold rounded-pill px-2 px-sm-3"
-                                                onClick={() => abrirModalContacto(producto)}
-                                                title="Contactar al vendedor"
-                                            >
-                                                <i className="bi bi-chat-dots"></i>
-                                            </Button>
-                                            <Button 
-                                                variant="outline-primary" 
-                                                className="w-100 fw-bold rounded-pill px-2 px-sm-3"
-                                                onClick={() => agregarAlCarrito(producto)}
-                                            >
-                                                <i className="bi bi-cart-plus me-1 me-sm-2"></i>
-                                                <span className="d-none d-sm-inline">Añadir</span>
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </Card.Body>
-                            </Card>
-                        </Col>
-                    ))}
-                </Row>
-            )}
-
-            {/* Modal del Carrito */}
+            {/* Modals remain the same but will inherit new styles */}
             <CarritoModal
                 mostrar={mostrarCarrito}
                 setMostrar={setMostrarCarrito}
@@ -296,23 +284,17 @@ function Catalogo() {
                 total={totalCarrito}
                 onCompraExitosa={handleCompraExitosa}
             />
-
-            {/* Modal de Mensaje */}
             <ModalMensaje 
                 mostrar={mostrarModalMensaje}
                 setMostrar={setMostrarModalMensaje}
                 producto={productoSeleccionado}
             />
-
-            {/* Modal de Detalles, Tienda y Reseñas */}
             <ModalDetalleProducto 
                 mostrar={mostrarModalDetalle}
                 setMostrar={setMostrarModalDetalle}
                 producto={productoSeleccionado}
                 agregarAlCarrito={agregarAlCarrito}
             />
-
-            {/* Modal Post-Compra (Invita a calificar) */}
             <ModalPostCompra
                 mostrar={mostrarModalPostCompra}
                 setMostrar={setMostrarModalPostCompra}
