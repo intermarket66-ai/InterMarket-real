@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from "react-router-dom";
 
 import Encabezado from "./components/navegacion/Encabezado";
 
@@ -24,13 +24,26 @@ import "./App.css"
 
 const AppLayout = () => {
   const location = useLocation();
-  const mostrarEncabezado = location.pathname !== "/seleccion-rol";
+  
+  // Normalizar path para la comparación (sin slash final y en minúsculas)
+  const currentPath = location.pathname.toLowerCase().replace(/\/$/, "");
+  
+  // No mostrar encabezado en estas rutas específicas
+  const rutasSinNavbar = ["/login", "/registro", "/seleccion-rol"];
+  const mostrarEncabezado = !rutasSinNavbar.includes(currentPath || "/");
+
+  // Nota: Si currentPath es vacío (ruta raíz), se maneja por separado si es necesario.
+  // Pero aquí, si currentPath es "", mostramos el navbar si no está en la lista.
+  
+  // Re-evaluación simplificada:
+  const isAuthPage = currentPath === "/login" || currentPath === "/registro" || currentPath === "/seleccion-rol";
+  const shouldShowNavbar = !isAuthPage;
 
   return (
     <>
-      {mostrarEncabezado && <Encabezado />}
+      {shouldShowNavbar && <Encabezado />}
 
-      <main className={mostrarEncabezado ? "margen-superior-main" : ""}>
+      <main className={shouldShowNavbar ? "margen-superior-main" : ""}>
         <Routes>
           <Route path="/login" element={<Login/>} />
           <Route path="/registro" element={<Registro/>} />
@@ -55,7 +68,7 @@ const AppLayout = () => {
           <Route path="/tiendas" element={<RutaProtegida rolesPermitidos={['vendedor']}><Tiendas /></RutaProtegida>} />
           <Route path="/vendedor" element={<RutaProtegida rolesPermitidos={['vendedor']}><Vendedor /></RutaProtegida>} />
           
-          {/* Rutas de Administrador (si aplica, asumo que se mantiene por el momento) */}
+          {/* Rutas de Administrador */}
           <Route path="/admin-inicio" element={<RutaProtegida><AdminInicio /></RutaProtegida>} />
           <Route path="/categorias" element={<RutaProtegida><Categorias /></RutaProtegida>} />
           
@@ -75,4 +88,3 @@ const App = () => {
 }
 
 export default App;
-

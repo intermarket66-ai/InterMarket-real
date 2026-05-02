@@ -64,14 +64,14 @@ function Login() {
   return (
     <div className="login-page-bg">
       <Container>
-        <Row className="justify-content-center">
-          <Col xs={11} sm={9} md={7} lg={5} xl={4}>
+        <Row className="justify-content-center align-items-center">
+          <Col xs={12} sm={10} md={8} lg={6} xl={4}>
             <Card className="login-card-unique border-0">
-              <Card.Body className="p-4 p-md-5">
-                <div className="text-center mb-4">
-                  <img src={logo} alt="InterMarket" className="img-figma-style mb-4" />
+              <Card.Body className="p-4 p-md-4"> {/* Reducido de p-5 a p-4 */}
+                <div className="text-center mb-3"> {/* Reducido mb-4 a mb-3 */}
+                  <img src={logo} alt="InterMarket" className="img-figma-style mb-3" />
                   <h1 className="login-header-title">InterMarket</h1>
-                  <p className="login-header-subtitle">Gestión de Inventario y Ventas</p>
+                  <p className="text-muted small mb-0">Gestión de Inventario y Ventas</p>
                 </div>
                 
                 <FormularioLogin
@@ -85,7 +85,7 @@ function Login() {
                   cargando={cargando}
                 />
 
-                <div className="text-center mt-4">
+                <div className="text-center mt-3"> {/* Reducido mt-4 a mt-3 */}
                   <small className="text-muted">
                     ¿No tienes una cuenta? <span className="text-primary fw-bold" style={{cursor: 'pointer'}} onClick={() => navegar("/registro")}>Regístrate aquí</span>
                   </small>

@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { Row, Col, Container } from "react-bootstrap";
 import "../App.css";
 
 const VistaRol = () => {
@@ -18,47 +19,52 @@ const VistaRol = () => {
   };
 
   return (
-    <section className="rol-page-bg">
-      <div className="rol-wrapper">
-        <div className="text-center mb-5">
-            <span className="text-uppercase fw-bold text-muted small ls-2 mb-2 d-block">Bienvenido de nuevo</span>
-            <h1 className="rol-title">¿Cómo quieres continuar hoy?</h1>
-            <p className="rol-subtitle text-center">
-              Selecciona tu rol para personalizar tu experiencia en InterMarket.
-            </p>
+    <section className="rol-page-modern-bg">
+      <Container className="rol-container-wow">
+        <div className="mb-5">
+            <h1 className="fw-900 mb-3" style={{ color: 'var(--color-primario)', fontSize: 'clamp(2.5rem, 6vw, 4rem)', letterSpacing: '-2px' }}>
+                Tu siguiente paso
+            </h1>
+            <p className="text-muted fs-5">Elige cómo quieres interactuar con InterMarket hoy.</p>
         </div>
 
-        <div className="rol-grid">
-          <div
-            className="rol-card"
-            onClick={() => handleRoleSelection("comprador")}
-          >
-            <div className="rol-icon">
-              <i className="bi bi-bag-heart" />
+        <Row className="justify-content-center g-4">
+          <Col md={6} lg={5}>
+            <div
+              className="rol-card-wow h-100"
+              onClick={() => handleRoleSelection("comprador")}
+            >
+              <div className="rol-icon-wow">
+                <i className="bi bi-cart-check" />
+              </div>
+              <h2 className="rol-title-card">Comprador</h2>
+              <p className="rol-desc-card">
+                Explora productos únicos, descubre ofertas exclusivas y gestiona tus pedidos con facilidad.
+              </p>
             </div>
-            <h2>Comprador</h2>
-            <p>Explora el catálogo, encuentra las mejores ofertas y gestiona tus compras con facilidad.</p>
-          </div>
+          </Col>
 
-          <div
-            className="rol-card"
-            onClick={() => handleRoleSelection("vendedor")}
-          >
-            <div className="rol-icon">
-              <i className="bi bi-shop" />
+          <Col md={6} lg={5}>
+            <div
+              className="rol-card-wow h-100"
+              onClick={() => handleRoleSelection("vendedor")}
+            >
+              <div className="rol-icon-wow">
+                <i className="bi bi-graph-up-arrow" />
+              </div>
+              <h2 className="rol-title-card">Vendedor</h2>
+              <p className="rol-desc-card">
+                Haz crecer tu negocio, publica nuevos productos y lleva el control total de tus ventas.
+              </p>
             </div>
-            <h2>Vendedor</h2>
-            <p>Administra tu inventario, publica nuevos productos y lleva el control total de tus ventas.</p>
-          </div>
-        </div>
+          </Col>
+        </Row>
 
-        <div className="text-center">
-            <button type="button" className="rol-logout" onClick={cerrarSesion}>
-              <i className="bi bi-box-arrow-left me-2"></i>
-              Cerrar sesión
-            </button>
-        </div>
-      </div>
+        <button type="button" className="rol-btn-logout-wow shadow-sm" onClick={cerrarSesion}>
+          <i className="bi bi-power me-2"></i>
+          Cerrar sesión segura
+        </button>
+      </Container>
     </section>
   );
 };
