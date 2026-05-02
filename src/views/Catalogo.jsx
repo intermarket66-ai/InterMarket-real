@@ -131,6 +131,7 @@ function Catalogo() {
                         variant="primary" 
                         size="md"
                         className="w-100 w-md-auto shadow-sm"
+                        style={{ backgroundColor: 'var(--color-primario)', borderColor: 'var(--color-primario)' }}
                         onClick={() => setMostrarCarrito(true)}
                         disabled={carrito.length === 0}
                     >
@@ -139,6 +140,20 @@ function Catalogo() {
                     </Button>
                 </Col>
             </Row>
+
+            {/* Banner de Ofertas (Estilo Figma) */}
+            <div 
+              className="mb-4 rounded px-4 py-3 d-flex justify-content-between align-items-center shadow-sm text-white" 
+              style={{ background: 'var(--color-oferta)' }}
+            >
+              <div>
+                <h4 className="m-0 fw-bold"><i className="bi bi-tag-fill me-2"></i>Semana de ofertas</h4>
+                <p className="m-0 text-white-50 small d-none d-sm-block">Aprovecha los mejores descuentos en tecnología y más</p>
+              </div>
+              <div className="bg-white text-dark px-3 py-2 rounded fw-bold shadow-sm" style={{ cursor: 'pointer' }}>
+                <i className="bi bi-calendar-event me-2 text-danger"></i>Ver todo
+              </div>
+            </div>
 
             {cargando ? (
                 <div className="text-center my-5">

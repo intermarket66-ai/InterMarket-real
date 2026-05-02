@@ -2,9 +2,11 @@ import React, { useEffect, useState } from "react";
 import { Container, Row, Col, Card, Spinner, Button, Tabs, Tab, Form, Table, Badge, Alert } from "react-bootstrap";
 import { supabase } from "../database/supabaseconfig";
 import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const Perfil = () => {
   const { user } = useAuth();
+  const navegar = useNavigate();
   const [perfil, setPerfil] = useState(null);
   const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -176,9 +178,20 @@ const Perfil = () => {
 
   return (
     <Container className="mt-5 pt-4">
-      <Row className="mb-4">
-        <Col>
-          <h2 className="fw-bold text-primary"><i className="bi bi-person-circle me-2"></i>Mi Panel</h2>
+      <Row className="mb-4 align-items-center">
+        <Col xs={8} md={9}>
+          <h2 className="fw-bold text-primary mb-0"><i className="bi bi-person-circle me-2"></i>Mi Panel</h2>
+        </Col>
+        <Col xs={4} md={3} className="text-end">
+          <Button 
+            variant="outline-secondary" 
+            size="sm"
+            onClick={() => navegar("/seleccion-rol")}
+            className="rounded-pill px-3 shadow-sm"
+          >
+            <i className="bi bi-arrow-left-right me-1"></i>
+            <span className="d-none d-sm-inline">Cambiar Rol</span>
+          </Button>
         </Col>
       </Row>
 
@@ -191,13 +204,13 @@ const Perfil = () => {
               <Row>
                 <Col md={4} className="text-center border-end mb-4 mb-md-0">
                   <img
-                    src={fotoUrl || "https://ui-avatars.com/api/?name=" + (perfil.usuarios?.username || "Usuario")}
+                    src={fotoUrl || "https://ui-avatars.com/api/?name=" + encodeURIComponent(perfil.usuarios?.username || user.user_metadata?.full_name || "Usuario")}
                     alt="Foto de perfil"
                     className="rounded-circle mb-3 shadow"
                     style={{ width: 150, height: 150, objectFit: "cover", border: '4px solid #fff' }}
                   />
-                  <h4 className="fw-bold">{perfil.usuarios?.username || "Usuario"}</h4>
-                  <p className="text-muted">{perfil.usuarios?.email}</p>
+                  <h4 className="fw-bold">{perfil.usuarios?.username || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "Usuario"}</h4>
+                  <p className="text-muted">{perfil.usuarios?.email || user.email}</p>
                   <Badge bg="primary" className="px-3 py-2 text-uppercase">
                     {perfil.rol || "Comprador"}
                   </Badge>
@@ -239,44 +252,93 @@ const Perfil = () => {
                   <p className="text-muted">Aún no has realizado ninguna compra.</p>
                 </div>
               ) : (
-                <Table responsive hover className="align-middle">
-                  <thead className="table-light">
-                    <tr>
-                      <th>Pedido</th>
-                      <th>Fecha</th>
-                      <th>Producto</th>
-                      <th>Precio</th>
-                      <th>Estado</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pedidos.map(pedido => (
-                      <tr key={pedido.id_pedido}>
-                        <td><small className="text-muted">#{pedido.id_pedido.split('-')[0]}</small></td>
-                        <td>{new Date(pedido.creado_en).toLocaleDateString()}</td>
-                        <td>
-                          <div className="d-flex align-items-center">
-                            {pedido.productos?.imagen_url?.[0] && (
-                              <img 
-                                src={pedido.productos.imagen_url[0]} 
-                                alt="" 
-                                style={{width: '40px', height: '40px', objectFit: 'cover', borderRadius: '4px'}} 
-                                className="me-2"
-                              />
-                            )}
-                            <span className="fw-bold">{pedido.productos?.nombre_producto}</span>
-                          </div>
-                        </td>
-                        <td className="text-success fw-bold">${Number(pedido.precio_unitario).toFixed(2)}</td>
-                        <td>
-                          <Badge bg={getBadgeColor(pedido.id_estado)} className="px-3 py-2 text-uppercase shadow-sm">
-                            {getEstadoTexto(pedido.id_estado)}
-                          </Badge>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
+                <>
+                  {/* VISTA MÓVIL (TARJETAS) */}
+                  <div className="d-lg-none">
+                    <Row xs={1} md={2} className="g-3">
+                      {pedidos.map(pedido => (
+                        <Col key={pedido.id_pedido}>
+                          <Card className="h-100 shadow-sm border-0">
+                            <Card.Body>
+                              <div className="d-flex justify-content-between align-items-center mb-2">
+                                <small className="text-muted">Pedido #{pedido.id_pedido.split('-')[0]}</small>
+                                <Badge bg={getBadgeColor(pedido.id_estado)} className="px-2 py-1 text-uppercase">
+                                  {getEstadoTexto(pedido.id_estado)}
+                                </Badge>
+                              </div>
+                              <div className="d-flex align-items-center mb-3">
+                                {pedido.productos?.imagen_url?.[0] ? (
+                                  <img 
+                                    src={pedido.productos.imagen_url[0]} 
+                                    alt="" 
+                                    style={{width: '50px', height: '50px', objectFit: 'cover', borderRadius: '6px'}} 
+                                    className="me-3 shadow-sm"
+                                  />
+                                ) : (
+                                  <div className="bg-light me-3 rounded d-flex align-items-center justify-content-center" style={{width: '50px', height: '50px'}}>
+                                    <i className="bi bi-image text-muted"></i>
+                                  </div>
+                                )}
+                                <Card.Title className="h6 mb-0">{pedido.productos?.nombre_producto}</Card.Title>
+                              </div>
+                              <hr className="my-2" />
+                              <div className="d-flex justify-content-between mb-2">
+                                <span className="text-muted">Fecha:</span>
+                                <strong>{new Date(pedido.creado_en).toLocaleDateString()}</strong>
+                              </div>
+                              <div className="d-flex justify-content-between">
+                                <span className="text-muted">Precio:</span>
+                                <strong className="text-success">${Number(pedido.precio_unitario).toFixed(2)}</strong>
+                              </div>
+                            </Card.Body>
+                          </Card>
+                        </Col>
+                      ))}
+                    </Row>
+                  </div>
+
+                  {/* VISTA ESCRITORIO (TABLA) */}
+                  <div className="d-none d-lg-block">
+                    <Table responsive hover className="align-middle">
+                      <thead className="table-light">
+                        <tr>
+                          <th>Pedido</th>
+                          <th>Fecha</th>
+                          <th>Producto</th>
+                          <th>Precio</th>
+                          <th>Estado</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pedidos.map(pedido => (
+                          <tr key={pedido.id_pedido}>
+                            <td><small className="text-muted">#{pedido.id_pedido.split('-')[0]}</small></td>
+                            <td>{new Date(pedido.creado_en).toLocaleDateString()}</td>
+                            <td>
+                              <div className="d-flex align-items-center">
+                                {pedido.productos?.imagen_url?.[0] && (
+                                  <img 
+                                    src={pedido.productos.imagen_url[0]} 
+                                    alt="" 
+                                    style={{width: '40px', height: '40px', objectFit: 'cover', borderRadius: '4px'}} 
+                                    className="me-2"
+                                  />
+                                )}
+                                <span className="fw-bold">{pedido.productos?.nombre_producto}</span>
+                              </div>
+                            </td>
+                            <td className="text-success fw-bold">${Number(pedido.precio_unitario).toFixed(2)}</td>
+                            <td>
+                              <Badge bg={getBadgeColor(pedido.id_estado)} className="px-3 py-2 text-uppercase shadow-sm">
+                                {getEstadoTexto(pedido.id_estado)}
+                              </Badge>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </Table>
+                  </div>
+                </>
               )}
             </Card.Body>
           </Card>

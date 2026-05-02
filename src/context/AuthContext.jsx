@@ -94,6 +94,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       localStorage.removeItem("usuario-supabase"); 
       localStorage.removeItem("usuario"); // Limpieza de datos viejos por si acaso
+      localStorage.removeItem("rol-activo"); // Limpiar el rol para la próxima sesión
       setSession(null);
       setUser(null);
       setRole(null);

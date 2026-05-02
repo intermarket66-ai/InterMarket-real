@@ -239,7 +239,7 @@ const Encabezado = () => {
   }
 
   return (
-    <Navbar className="color-navbar shadow-lg" bg="text-warning" expand="md" fixed="top" variant="dark">
+    <Navbar className="color-navbar shadow-lg" expand="md" fixed="top" variant="light">
       <Container>
         <Navbar.Brand
           onClick={() => manejarNavegacion(esCatalogo ? "/catalogo" : "/")}

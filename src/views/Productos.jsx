@@ -98,10 +98,11 @@ const Productos = () => {
             setProductosFiltrados(productos);
         } else {
             const busqueda = textoBusqueda.toLowerCase().trim();
-            const filtrados = productos.filter((p) => (
-                p.nombre_producto?.toLowerCase().includes(busqueda) ||
-                p.categorias?.nombre_categoria?.toLowerCase().includes(busqueda)
-            ));
+            const filtrados = productos.filter((p) => {
+                const nombreStr = p.nombre_producto ? String(p.nombre_producto).toLowerCase() : "";
+                const catStr = p.categorias?.nombre_categoria ? String(p.categorias.nombre_categoria).toLowerCase() : "";
+                return nombreStr.includes(busqueda) || catStr.includes(busqueda);
+            });
             setProductosFiltrados(filtrados);
         }
     }, [textoBusqueda, productos]);
@@ -359,12 +360,26 @@ const Productos = () => {
                     <h3><i className="bi bi-box-seam me-2"></i> Productos</h3>
                 </Col>
                 <Col xs={3} className="text-end">
-                    <Button onClick={() => setMostrarModalRegistro(true)}>
+                    <Button 
+                        onClick={() => setMostrarModalRegistro(true)}
+                        disabled={!idTienda}
+                        title={!idTienda ? "Debes crear una tienda primero" : ""}
+                    >
                         <i className="bi bi-plus-lg"></i> <span className="d-none d-sm-inline">Nuevo</span>
                     </Button>
                 </Col>
             </Row>
             <hr />
+
+            {!idTienda && (
+                <Alert variant="danger" className="text-center mt-4">
+                    <h5><i className="bi bi-exclamation-triangle-fill me-2"></i> ¡Atención!</h5>
+                    <p className="mb-0">
+                        Para poder agregar productos, primero debes registrar o tener vinculada una <strong>Tienda</strong>. 
+                        Ve a la sección "Mis Tiendas" para crear una.
+                    </p>
+                </Alert>
+            )}
 
             <CuadroBusquedas 
                 textoBusqueda={textoBusqueda} 

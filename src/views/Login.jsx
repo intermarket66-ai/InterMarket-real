@@ -44,8 +44,12 @@ function Login() {
     try {
       setCargando(true);
       setError(null);
+      localStorage.removeItem("rol-activo");
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        }
       });
       if (error) throw error;
     } catch (err) {
@@ -75,6 +79,7 @@ function Login() {
                   usuario={usuario}
                   contraseña={contraseña}
                   error={error}
+                  setUsuario={setUsuario}
                   setContraseña={setContraseña}
                   iniciarSesion={iniciarSesion}
                   iniciarSesionConGoogle={iniciarSesionConGoogle}

@@ -168,67 +168,134 @@ const Vendedor = () => {
               <p className="mt-3 text-muted">Aún no tienes pedidos asociados a tu tienda.</p>
             </div>
           ) : (
-            <Table responsive hover className="align-middle">
-              <thead className="table-light">
-                <tr>
-                  <th>ID Pedido</th>
-                  <th>Fecha</th>
-                  <th>Producto</th>
-                  <th>Comprador</th>
-                  <th>Monto</th>
-                  <th>Estado</th>
-                  <th className="text-center">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pedidos.map((pedido) => (
-                  <tr key={pedido.id_pedido}>
-                    <td><small className="text-muted">{pedido.id_pedido.split('-')[0]}</small></td>
-                    <td>{new Date(pedido.creado_en).toLocaleDateString()}</td>
-                    <td>{pedido.productos?.nombre_producto}</td>
-                    <td>{pedido.perfiles?.usuarios?.username || 'Usuario'}</td>
-                    <td className="fw-bold text-success">${Number(pedido.precio_unitario).toFixed(2)}</td>
-                    <td>
-                      <Badge bg={badgeColor(pedido.id_estado)} className="px-3 py-2 text-uppercase">
-                        {getEstadoTexto(pedido.id_estado)}
-                      </Badge>
-                    </td>
-                    <td className="text-center">
-                      {pedido.id_estado === 1 && (
-                        <>
-                          <Button 
-                            variant="success" 
-                            size="sm" 
-                            className="me-2 rounded-pill px-3"
-                            onClick={() => cambiarEstadoPedido(pedido.id_pedido, 2)}
-                          >
-                            <i className="bi bi-check-circle me-1"></i> Aceptar
-                          </Button>
-                          <Button 
-                            variant="danger" 
-                            size="sm"
-                            className="rounded-pill px-3"
-                            onClick={() => cambiarEstadoPedido(pedido.id_pedido, 3)}
-                          >
-                            <i className="bi bi-x-circle me-1"></i> Rechazar
-                          </Button>
-                        </>
-                      )}
-                      {pedido.id_estado === 2 && (
-                        <Button 
-                          variant="info" 
-                          size="sm" 
-                          className="rounded-pill px-3 text-white"
-                          onClick={() => cambiarEstadoPedido(pedido.id_pedido, 4)}
-                        >
-                          <i className="bi bi-box-seam me-1"></i> Marcar Entregado
-                        </Button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
+            <>
+              {/* VISTA MÓVIL (TARJETAS) */}
+              <div className="d-lg-none">
+                <Row xs={1} md={2} className="g-3">
+                  {pedidos.map((pedido) => (
+                    <Col key={pedido.id_pedido}>
+                      <Card className="h-100 shadow-sm border-0">
+                        <Card.Body>
+                          <div className="d-flex justify-content-between align-items-center mb-2">
+                            <small className="text-muted">ID: {pedido.id_pedido.split('-')[0]}</small>
+                            <Badge bg={badgeColor(pedido.id_estado)} className="px-2 py-1 text-uppercase">
+                              {getEstadoTexto(pedido.id_estado)}
+                            </Badge>
+                          </div>
+                          <Card.Title className="h5 mb-1">{pedido.productos?.nombre_producto}</Card.Title>
+                          <Card.Subtitle className="mb-2 text-muted">
+                            <i className="bi bi-person me-1"></i> {pedido.perfiles?.usuarios?.username || 'Usuario'}
+                          </Card.Subtitle>
+                          <hr className="my-2" />
+                          <div className="d-flex justify-content-between mb-2">
+                            <span>Fecha:</span>
+                            <strong>{new Date(pedido.creado_en).toLocaleDateString()}</strong>
+                          </div>
+                          <div className="d-flex justify-content-between mb-3">
+                            <span>Monto:</span>
+                            <strong className="text-success">${Number(pedido.precio_unitario).toFixed(2)}</strong>
+                          </div>
+                          <div className="d-flex justify-content-end gap-2">
+                            {pedido.id_estado === 1 && (
+                              <>
+                                <Button 
+                                  variant="outline-success" 
+                                  size="sm" 
+                                  onClick={() => cambiarEstadoPedido(pedido.id_pedido, 2)}
+                                >
+                                  <i className="bi bi-check-circle me-1"></i> Aceptar
+                                </Button>
+                                <Button 
+                                  variant="outline-danger" 
+                                  size="sm"
+                                  onClick={() => cambiarEstadoPedido(pedido.id_pedido, 3)}
+                                >
+                                  <i className="bi bi-x-circle me-1"></i> Rechazar
+                                </Button>
+                              </>
+                            )}
+                            {pedido.id_estado === 2 && (
+                              <Button 
+                                variant="outline-info" 
+                                size="sm" 
+                                onClick={() => cambiarEstadoPedido(pedido.id_pedido, 4)}
+                              >
+                                <i className="bi bi-box-seam me-1"></i> Entregar
+                              </Button>
+                            )}
+                          </div>
+                        </Card.Body>
+                      </Card>
+                    </Col>
+                  ))}
+                </Row>
+              </div>
+
+              {/* VISTA ESCRITORIO (TABLA) */}
+              <div className="d-none d-lg-block">
+                <Table responsive hover className="align-middle">
+                  <thead className="table-light">
+                    <tr>
+                      <th>ID Pedido</th>
+                      <th>Fecha</th>
+                      <th>Producto</th>
+                      <th>Comprador</th>
+                      <th>Monto</th>
+                      <th>Estado</th>
+                      <th className="text-center">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pedidos.map((pedido) => (
+                      <tr key={pedido.id_pedido}>
+                        <td><small className="text-muted">{pedido.id_pedido.split('-')[0]}</small></td>
+                        <td>{new Date(pedido.creado_en).toLocaleDateString()}</td>
+                        <td>{pedido.productos?.nombre_producto}</td>
+                        <td>{pedido.perfiles?.usuarios?.username || 'Usuario'}</td>
+                        <td className="fw-bold text-success">${Number(pedido.precio_unitario).toFixed(2)}</td>
+                        <td>
+                          <Badge bg={badgeColor(pedido.id_estado)} className="px-3 py-2 text-uppercase">
+                            {getEstadoTexto(pedido.id_estado)}
+                          </Badge>
+                        </td>
+                        <td className="text-center">
+                          {pedido.id_estado === 1 && (
+                            <>
+                              <Button 
+                                variant="success" 
+                                size="sm" 
+                                className="me-2 rounded-pill px-3"
+                                onClick={() => cambiarEstadoPedido(pedido.id_pedido, 2)}
+                              >
+                                <i className="bi bi-check-circle me-1"></i> Aceptar
+                              </Button>
+                              <Button 
+                                variant="danger" 
+                                size="sm"
+                                className="rounded-pill px-3"
+                                onClick={() => cambiarEstadoPedido(pedido.id_pedido, 3)}
+                              >
+                                <i className="bi bi-x-circle me-1"></i> Rechazar
+                              </Button>
+                            </>
+                          )}
+                          {pedido.id_estado === 2 && (
+                            <Button 
+                              variant="info" 
+                              size="sm" 
+                              className="rounded-pill px-3 text-white"
+                              onClick={() => cambiarEstadoPedido(pedido.id_pedido, 4)}
+                            >
+                              <i className="bi bi-box-seam me-1"></i> Marcar Entregado
+                            </Button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </div>
+            </>
           )}
         </Card.Body>
       </Card>
