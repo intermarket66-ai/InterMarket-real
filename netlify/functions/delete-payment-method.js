@@ -72,8 +72,7 @@ export const handler = async (event) => {
       },
     });
 
-    await supabase.auth.setAuth(token);
-    const { data: userData, error: userError } = await supabase.auth.getUser();
+    const { data: userData, error: userError } = await supabase.auth.getUser(token);
 
     if (userError || !userData?.user) {
       return {

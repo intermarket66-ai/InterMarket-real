@@ -76,8 +76,7 @@ export const handler = async (event, context) => {
         const supabase = createClient(supabaseUrl, supabaseAnonKey, {
             auth: { persistSession: false, autoRefreshToken: false },
         });
-        await supabase.auth.setAuth(token);
-        const { data: authUserData, error: authUserError } = await supabase.auth.getUser();
+        const { data: authUserData, error: authUserError } = await supabase.auth.getUser(token);
 
         if (authUserError || !authUserData?.user) {
             return {
