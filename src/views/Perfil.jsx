@@ -5,12 +5,14 @@ import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
 const Perfil = () => {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const navegar = useNavigate();
   const [perfil, setPerfil] = useState(null);
   const [pedidos, setPedidos] = useState([]);
+  const [metodosPago, setMetodosPago] = useState([]);
   const [loading, setLoading] = useState(true);
   const [guardando, setGuardando] = useState(false);
+  const [eliminandoTarjetaId, setEliminandoTarjetaId] = useState(null);
   const [fotoUrl, setFotoUrl] = useState("");
   const [archivoNuevo, setArchivoNuevo] = useState(null);
   const [mensaje, setMensaje] = useState({ texto: "", tipo: "" });
@@ -78,6 +80,15 @@ const Perfil = () => {
           .order("creado_en", { ascending: false });
           
         setPedidos(pedidosData || []);
+
+        // 3. Obtener métodos de pago guardados del comprador
+        const { data: metodosData } = await supabase
+          .from("metodos_pago")
+          .select("*")
+          .eq("id_usuario", user.id)
+          .order("creado_en", { ascending: false });
+
+        setMetodosPago(metodosData || []);
       }
       setLoading(false);
     };
@@ -141,6 +152,42 @@ const Perfil = () => {
       case 3: return 'danger'; // Cancelado / Rechazado
       case 4: return 'info'; // Entregado / Completado
       default: return 'secondary';
+    }
+  };
+
+  const eliminarTarjeta = async (id_metodo_pago) => {
+    const confirmar = window.confirm("¿Eliminar esta tarjeta? Esta acción no se puede deshacer.");
+    if (!confirmar) return;
+    if (!session?.access_token) {
+      setMensaje({ texto: "No se pudo autenticar la sesión. Vuelve a iniciar sesión.", tipo: "danger" });
+      return;
+    }
+
+    setEliminandoTarjetaId(id_metodo_pago);
+    setMensaje({ texto: "", tipo: "" });
+
+    try {
+      const response = await fetch('/.netlify/functions/delete-payment-method', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ id_metodo_pago }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Error al eliminar tarjeta');
+      }
+
+      setMetodosPago((prev) => prev.filter((m) => m.id_metodo_pago !== id_metodo_pago));
+      setMensaje({ texto: "Tarjeta eliminada correctamente.", tipo: "success" });
+    } catch (err) {
+      console.error(err);
+      setMensaje({ texto: err.message || "No se pudo eliminar la tarjeta. Intenta de nuevo más tarde.", tipo: "danger" });
+    } finally {
+      setEliminandoTarjetaId(null);
     }
   };
 
@@ -236,6 +283,54 @@ const Perfil = () => {
                   </Button>
                 </Col>
               </Row>
+            </Card.Body>
+          </Card>
+        </Tab>
+
+        {/* PESTAÑA MÉTODOS DE PAGO */}
+        <Tab eventKey="metodos" title={<span><i className="bi bi-credit-card me-2"></i>Métodos de Pago</span>}>
+          <Card className="shadow-sm border-0 mt-3">
+            <Card.Body className="p-4">
+              <h5 className="border-bottom pb-2 mb-4">Tarjetas guardadas</h5>
+
+              {metodosPago.length === 0 ? (
+                <div className="text-center p-5 bg-light rounded">
+                  <i className="bi bi-credit-card text-muted mb-3" style={{ fontSize: '3rem' }}></i>
+                  <p className="text-muted">No hay tarjetas guardadas en este perfil.</p>
+                </div>
+              ) : (
+                <Table responsive hover className="align-middle">
+                  <thead className="table-light">
+                    <tr>
+                      <th>Tipo</th>
+                      <th>Últimos 4</th>
+                      <th>ID Stripe</th>
+                      <th>Guardada</th>
+                      <th>Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {metodosPago.map((metodo) => (
+                      <tr key={metodo.id_metodo_pago}>
+                        <td>{metodo.tipo_metodo || 'Tarjeta'}</td>
+                        <td>**** **** **** {metodo.ultimo4 || '----'}</td>
+                        <td className="text-truncate" style={{ maxWidth: 180 }}>{metodo.id_stripe_payment_method || '-'}</td>
+                        <td>{metodo.creado_en ? new Date(metodo.creado_en).toLocaleDateString() : '-'}</td>
+                        <td>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={() => eliminarTarjeta(metodo.id_metodo_pago)}
+                            disabled={eliminandoTarjetaId === metodo.id_metodo_pago}
+                          >
+                            {eliminandoTarjetaId === metodo.id_metodo_pago ? 'Eliminando...' : 'Eliminar'}
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              )}
             </Card.Body>
           </Card>
         </Tab>

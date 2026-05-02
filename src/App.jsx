@@ -16,6 +16,8 @@ import VistaRol from "./views/vista_rol";
 import AdminInicio from "./views/AdminInicio";
 import Perfil from "./views/Perfil";
 import Mensajes from "./views/Mensajes";
+import CheckoutSuccess from "./views/CheckoutSuccess";
+import CheckoutCancel from "./views/CheckoutCancel";
 
 import "./App.css"
 
@@ -43,6 +45,10 @@ const AppLayout = () => {
           <Route path="/catalogo" element={<Catalogo />} />
           <Route path="/perfil" element={<RutaProtegida><Perfil /></RutaProtegida>} />
           <Route path="/mensajes" element={<RutaProtegida><Mensajes /></RutaProtegida>} />
+          
+          {/* Rutas de Pago (Stripe) */}
+          <Route path="/success" element={<RutaProtegida><CheckoutSuccess /></RutaProtegida>} />
+          <Route path="/cancel" element={<RutaProtegida><CheckoutCancel /></RutaProtegida>} />
           
           {/* Rutas de Vendedor */}
           <Route path="/productos" element={<RutaProtegida rolesPermitidos={['vendedor']}><Productos /></RutaProtegida>} />

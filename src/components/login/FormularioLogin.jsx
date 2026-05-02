@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Form, Button, Alert, InputGroup } from 'react-bootstrap';
 
-const FormularioLogin = ({ usuario, contraseña, error, setUsuario, setContraseña, iniciarSesion, iniciarSesionConGoogle, cargando }) => {
+const FormularioLogin = ({ usuario, contraseña, error, setUsuario, setContraseña, iniciarSesion, ntrariniciarSesionConGoogle, cargando }) => {
   const [mostrarContraseña, setMostrarContraseña] = useState(false);
 
   return (

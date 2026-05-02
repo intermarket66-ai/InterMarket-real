@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { enviarNotificacionPorCorreo } from '../../services/emailService';
 
 const CarritoModal = ({ mostrar, setMostrar, carrito, setCarrito, total, onCompraExitosa }) => {
-    const { user } = useAuth();
+    const { user, session } = useAuth();
     const [procesando, setProcesando] = useState(false);
 
     const actualizarCantidad = (id_producto, nuevaCantidad) => {
@@ -43,63 +43,33 @@ const CarritoModal = ({ mostrar, setMostrar, carrito, setCarrito, total, onCompr
         try {
             setProcesando(true);
             
-            // Obtener el perfil del comprador
-            const { data: perfilData } = await supabase.from('perfiles').select('perfil_id, usuarios(username)').eq('id_usuario', user.id).maybeSingle();
-            const perfilId = perfilData?.perfil_id;
-            const nombreComprador = perfilData?.usuarios?.username || 'Un comprador';
-            
-            if (!perfilId) throw new Error("Perfil de comprador no encontrado.");
-            
-            // 1. Crear Venta principal
-            const { data: venta, error: ventaError } = await supabase.from('ventas').insert({
-                id_usuario: user.id,
-                monto_total: total,
-                id_estado: 1 // Pendiente
-            }).select().single();
-            
-            if (ventaError) throw ventaError;
-            
-            // 2. Insertar Pedidos (Order items)
-            const pedidos = carrito.map(item => ({
-                perfil_id: perfilId,
-                venta_id: venta.venta_id,
-                producto_id: item.id_producto,
-                id_estado: 1, // Pendiente
-                precio_unitario: item.precio_venta
-                // El vendedor recibe la info mediante el producto_id -> id_tienda -> perfiles(vendedor)
-            }));
-            
-            await supabase.from('pedidos').insert(pedidos);
-            
-            // 3. Enviar notificaciones a los vendedores
-            const tiendasIds = [...new Set(carrito.map(item => item.id_tienda).filter(Boolean))];
-            
-            for (const idTienda of tiendasIds) {
-                const { data: vendedorData } = await supabase
-                    .from('perfiles')
-                    .select('perfil_id, usuarios(email)')
-                    .eq('id_tienda', idTienda)
-                    .maybeSingle();
-                
-                if (vendedorData?.perfil_id) {
-                    const titulo = '¡Nuevo pedido recibido!';
-                    const msj = `${nombreComprador} acaba de realizar una compra en tu tienda. Revisa tu panel de ventas.`;
-                    await supabase.from('notificaciones').insert([{
-                        usuario_id: vendedorData.perfil_id,
-                        titulo: titulo,
-                        mensaje: msj
-                    }]);
+            // Llamar a la Netlify Function
+            const response = await fetch('/.netlify/functions/create-checkout-session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: session?.access_token ? `Bearer ${session.access_token}` : '',
+                },
+                body: JSON.stringify({ carrito }),
+            });
 
-                    if (vendedorData.usuarios?.email) {
-                        enviarNotificacionPorCorreo(vendedorData.usuarios.email, titulo, msj);
-                    }
-                }
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Error al procesar la compra');
             }
+
+            const data = await response.json();
             
-            const itemsComprados = [...carrito];
-            vaciarCarrito();
-            setMostrar(false);
-            if (onCompraExitosa) onCompraExitosa(itemsComprados);
+            if (data?.url) {
+                // Save cart temporarily so we can process it after redirect
+                localStorage.setItem('carritoPendiente', JSON.stringify(carrito));
+                localStorage.setItem('totalPendiente', total.toString());
+                
+                // Redirect to Stripe
+                window.location.href = data.url;
+            } else {
+                throw new Error("No se obtuvo la URL de pago.");
+            }
             
         } catch (err) {
             console.error("Error al procesar compra:", err);

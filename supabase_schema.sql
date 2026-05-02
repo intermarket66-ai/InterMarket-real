@@ -333,9 +333,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.pedidos;
     UNIQUE(producto_id, comprador_id)
   );
 
-  ALTER TABLE public.resenas_productos ENABLE ROW LEVEL SECURITY;
-  CREATE POLICY "Reseñas visibles para todos" ON public.resenas_productos FOR SELECT USING (true);
-  CREATE POLICY "Usuarios insertan sus reseñas" ON public.resenas_productos FOR INSERT WITH CHECK (
+  ALTER TABLE public.reseñas_productos ENABLE ROW LEVEL SECURITY;
+  CREATE POLICY "Reseñas visibles para todos" ON public.reseñas_productos FOR SELECT USING (true);
+  CREATE POLICY "Usuarios insertan sus reseñas" ON public.reseñas_productos FOR INSERT WITH CHECK (
     EXISTS (SELECT 1 FROM public.perfiles p WHERE p.id_usuario = auth.uid() AND p.perfil_id = resenas_productos.comprador_id)
   );
 
