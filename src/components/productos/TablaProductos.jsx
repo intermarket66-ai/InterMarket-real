@@ -37,7 +37,6 @@ const TablaProductos = ({
                     <th className="text-end">Precio Compra</th>
                     <th className="text-end">Precio Venta</th>
                     <th className="text-center">Oferta</th>
-                    <th className="text-center">Estado</th>
                     <th className="text-center">Acciones</th>
                 </tr>
             </thead>
@@ -86,16 +85,7 @@ const TablaProductos = ({
                                 <small className="text-muted">Sin oferta</small>
                             )}
                         </td>
-                        
-                        <td className="text-center">
-                            <Badge 
-                                bg={producto.id_estado === 1 ? 'success' : 'warning'}
-                                className="px-3 py-1"
-                            >
-                                {producto.id_estado === 1 ? 'Entregado' : 'Proceso'}
-                            </Badge>
-                        </td>
-                        
+                    
                         <td className="text-center">
                             <Button
                                 variant="outline-warning"

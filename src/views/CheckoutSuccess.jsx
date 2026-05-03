@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Container, Card, Spinner, Button } from 'react-bootstrap';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../database/supabaseconfig';
@@ -11,12 +11,15 @@ const CheckoutSuccess = () => {
     const location = useLocation();
     const [procesando, setProcesando] = useState(true);
     const [error, setError] = useState(null);
+    const procesadoRef = useRef(false);
 
     useEffect(() => {
+        // Bloqueo para evitar doble ejecución (React Strict Mode o re-renders)
+        if (procesadoRef.current) return;
+
         const confirmarCompra = async () => {
-            if (!user) {
-                setError("Debes iniciar sesión para confirmar la compra.");
-                setProcesando(false);
+            if (!user || !session?.access_token) {
+                // Esperar a que la sesión esté cargada
                 return;
             }
 
@@ -24,26 +27,14 @@ const CheckoutSuccess = () => {
             const totalPendienteStr = localStorage.getItem('totalPendiente');
             const sessionId = new URLSearchParams(location.search).get('session_id');
 
-            if (sessionId && session?.access_token) {
-                try {
-                    await fetch('/.netlify/functions/save-payment-method', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            Authorization: `Bearer ${session.access_token}`,
-                        },
-                        body: JSON.stringify({ session_id: sessionId }),
-                    });
-                } catch (err) {
-                    console.warn('No se pudo guardar el método de pago Stripe:', err);
-                }
-            }
-
             if (!carritoPendienteStr || !totalPendienteStr) {
                 // Ya se procesó o no hay nada pendiente
                 setProcesando(false);
                 return;
             }
+
+            // Activar el candado de inmediato
+            procesadoRef.current = true;
 
             try {
                 const carrito = JSON.parse(carritoPendienteStr);
@@ -68,7 +59,7 @@ const CheckoutSuccess = () => {
                     throw new Error(errorData.error || 'Error al procesar la orden final');
                 }
 
-                // Opcional: También guardar el método de pago si quieres
+                // Intentar guardar el método de pago si es posible
                 try {
                     await fetch('/.netlify/functions/save-payment-method', {
                         method: 'POST',
@@ -90,14 +81,28 @@ const CheckoutSuccess = () => {
                 
             } catch (err) {
                 console.error("Error al confirmar la venta:", err);
+                
+                // Si el error es por duplicado, lo tratamos como éxito porque la venta ya existe
+                if (err.message.includes('unique_stripe_intent') || err.message.includes('23505')) {
+                    console.log("Detectada venta duplicada, marcando como éxito.");
+                    localStorage.removeItem('carritoPendiente');
+                    localStorage.removeItem('totalPendiente');
+                    localStorage.removeItem('carrito');
+                    window.dispatchEvent(new Event('carritoActualizado'));
+                    setProcesando(false);
+                    return;
+                }
+
                 setError(err.message);
+                // Si hubo un error real de red, permitimos reintentar si el usuario recarga
+                procesadoRef.current = false;
             } finally {
                 setProcesando(false);
             }
         };
 
         confirmarCompra();
-    }, [user, session]);
+    }, [user, session, location.search]);
 
     return (
         <Container className="py-5 mt-5">

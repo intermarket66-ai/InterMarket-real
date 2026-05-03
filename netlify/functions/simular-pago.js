@@ -1,9 +1,7 @@
-import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = process.env.VITE_SUPABASE_API_KEY;
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -20,17 +18,16 @@ export const handler = async (event) => {
     }
 
     try {
-        const { session_id, carrito, total } = JSON.parse(event.body || '{}');
+        const { carrito, total, id_operacion } = JSON.parse(event.body || '{}');
 
-        if (!session_id || !carrito || !total) {
+        if (!carrito || !total || !id_operacion) {
             return {
                 statusCode: 400,
                 headers,
-                body: JSON.stringify({ error: 'Faltan datos requeridos (session_id, carrito, total).' }),
+                body: JSON.stringify({ error: 'Faltan datos requeridos (carrito, total, id_operacion).' }),
             };
         }
 
-        // 1. Obtener el token del usuario para actuar en su nombre (respeta RLS)
         const authHeader = event.headers.authorization || event.headers.Authorization;
         if (!authHeader) {
             return { statusCode: 401, headers, body: JSON.stringify({ error: 'No autorizado' }) };
@@ -48,16 +45,6 @@ export const handler = async (event) => {
 
         const userId = authUserData.user.id;
 
-        // 2. Verificar la sesión en Stripe
-        const session = await stripe.checkout.sessions.retrieve(session_id);
-        if (!session || session.payment_status !== 'paid') {
-            return {
-                statusCode: 400,
-                headers,
-                body: JSON.stringify({ error: 'El pago no ha sido completado en Stripe.' }),
-            };
-        }
-
         // 3. Obtener el perfil del comprador
         const { data: perfilData, error: perfilError } = await supabase
             .from('perfiles')
@@ -70,10 +57,10 @@ export const handler = async (event) => {
         }
 
         const perfilId = perfilData.perfil_id;
-        const nombreComprador = perfilData.usuarios?.username || 'Un comprador';
+        const nombreComprador = perfilData.usuarios?.username || 'Comprador (Simulado)';
 
-        // 4. Verificar si la venta ya existe (IDEMPOTENCIA)
-        const stripeIntentId = session.payment_intent;
+        // 4. Verificar si ya se procesó (IDEMPOTENCIA)
+        const stripeIntentId = 'simulado_' + id_operacion;
         const { data: ventaExistente } = await supabase
             .from('ventas')
             .select('venta_id')
@@ -81,7 +68,6 @@ export const handler = async (event) => {
             .maybeSingle();
 
         if (ventaExistente) {
-            console.log(`[Idempotencia] Venta ya procesada para el intent: ${stripeIntentId}`);
             return {
                 statusCode: 200,
                 headers,
@@ -96,14 +82,14 @@ export const handler = async (event) => {
             .insert({
                 id_usuario: userId,
                 monto_total: total,
-                id_estado: 2, 
+                id_estado: 2, // 2 = Pagado (Simulado)
                 id_stripe_intent: stripeIntentId
             })
             .select()
             .single();
 
         if (ventaError) {
-            // Si hubo un error de "Duplicate Key" (código 23505), significa que otra instancia ganó la carrera
+            // Manejar carrera (race condition)
             if (ventaError.code === '23505') {
                 const { data: reVenta } = await supabase
                     .from('ventas')
@@ -126,7 +112,7 @@ export const handler = async (event) => {
             perfil_id: perfilId,
             venta_id: venta.venta_id,
             producto_id: item.id_producto,
-            id_estado: 1, // El item individual empieza como 'Pendiente' hasta que el vendedor lo acepte
+            id_estado: 1, // Pendiente
             precio_unitario: item.precio_venta
         }));
 
@@ -145,8 +131,8 @@ export const handler = async (event) => {
             if (vendedorData) {
                 await supabase.from('notificaciones').insert([{
                     usuario_id: vendedorData.perfil_id,
-                    titulo: '¡Nueva venta realizada!',
-                    mensaje: `${nombreComprador} ha comprado productos de tu tienda. Pago confirmado vía Stripe.`
+                    titulo: '¡Nueva venta (Simulada)!',
+                    mensaje: `${nombreComprador} ha realizado una compra de prueba.`
                 }]);
             }
         }
@@ -158,7 +144,7 @@ export const handler = async (event) => {
         };
 
     } catch (error) {
-        console.error('Error en complete-order:', error);
+        console.error('Error en simular-pago:', error);
         return {
             statusCode: 500,
             headers,

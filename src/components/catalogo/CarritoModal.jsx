@@ -83,6 +83,45 @@ const CarritoModal = ({ mostrar, setMostrar, carrito, setCarrito, total, onCompr
         }
     };
 
+    const simularCompra = async () => {
+        if (!user) {
+            alert("Debes iniciar sesión para simular una compra.");
+            return;
+        }
+
+        try {
+            setProcesando(true);
+            const idOperacion = Date.now().toString(); // ID único para esta operación
+            const response = await fetch('/.netlify/functions/simular-pago', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: session?.access_token ? `Bearer ${session.access_token}` : '',
+                },
+                body: JSON.stringify({ carrito, total, id_operacion: idOperacion }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Error en la simulación');
+            }
+
+            const data = await response.json();
+            if (data.success) {
+                alert("¡Pago Simulado Exitosamente! La venta ha sido registrada.");
+                setCarrito([]);
+                localStorage.removeItem('carrito');
+                window.dispatchEvent(new Event('carritoActualizado'));
+                setMostrar(false);
+            }
+        } catch (err) {
+            console.error("Error en simulación:", err);
+            alert("Error al simular el pago: " + err.message);
+        } finally {
+            setProcesando(false);
+        }
+    };
+
     return (
         <Modal show={mostrar} onHide={() => setMostrar(false)} size="lg" centered>
             <Modal.Header closeButton>
@@ -172,6 +211,9 @@ const CarritoModal = ({ mostrar, setMostrar, carrito, setCarrito, total, onCompr
                     <>
                         <Button variant="outline-danger" onClick={vaciarCarrito} disabled={procesando}>
                             Vaciar Carrito
+                        </Button>
+                        <Button variant="outline-primary" onClick={simularCompra} disabled={procesando}>
+                            {procesando ? '...' : 'Simular Pago'}
                         </Button>
                         <Button variant="success" onClick={realizarCompra} disabled={procesando}>
                             {procesando ? (

@@ -15,11 +15,12 @@ const FormularioRegistro = ({ correo, contraseña, confirmarContraseña, error, 
             <i className="bi bi-person-circle"></i>
           </InputGroup.Text>
           <Form.Control
-            type="text"
+            type="email"
             placeholder="Correo electrónico"
             value={correo}
             onChange={(e) => setCorreo(e.target.value)}
             required
+            autoComplete="email"
           />
         </InputGroup>
       </Form.Group>

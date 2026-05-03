@@ -211,9 +211,9 @@ const Encabezado = () => {
           <Offcanvas.Body className="d-flex flex-column p-0">
             {user && (
                 <div className="offcanvas-user-section">
-                    <div className="user-avatar-placeholder">{user.email?.charAt(0).toUpperCase()}</div>
+                    <div className="user-avatar-placeholder">{(user.email || "U").charAt(0).toUpperCase()}</div>
                     <div>
-                        <div className="fw-bold text-dark small">{user.email}</div>
+                        <div className="fw-bold text-dark small">{user.email || 'Usuario'}</div>
                         <div className="text-muted" style={{fontSize: '0.75rem'}}>Rol: {role || 'Cargando...'}</div>
                     </div>
                 </div>

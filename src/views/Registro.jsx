@@ -35,12 +35,13 @@ function Registro() {
       });
 
       if (authError) {
-        if (authError.message.includes("already registered")) {
+        const msg = authError.message || "";
+        if (msg.includes("already registered")) {
           setError("Este correo ya está registrado.");
-        } else if (authError.message.includes("Password should be")) {
+        } else if (msg.includes("Password should be")) {
           setError("La contraseña debe tener al menos 6 caracteres.");
         } else {
-          setError("Error al registrar: " + authError.message);
+          setError("Error al registrar: " + msg);
         }
         return;
       }
