@@ -18,7 +18,7 @@ export const handler = async (event) => {
     }
 
     try {
-        const { carrito, total, id_operacion } = JSON.parse(event.body || '{}');
+        const { carrito, total, id_operacion, id_direccion } = JSON.parse(event.body || '{}');
 
         if (!carrito || !total || !id_operacion) {
             return {
@@ -88,7 +88,8 @@ export const handler = async (event) => {
                 id_usuario: userId,
                 monto_total: total,
                 id_estado: 2, // 2 = Pagado (Simulado)
-                id_stripe_intent: stripeIntentId
+                id_stripe_intent: stripeIntentId,
+                id_direccion: id_direccion
             })
             .select()
             .single();

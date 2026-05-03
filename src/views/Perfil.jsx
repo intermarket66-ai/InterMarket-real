@@ -22,6 +22,14 @@ const Perfil = () => {
   const [nuevaTarjeta, setNuevaTarjeta] = useState({ tipo: "Visa", ultimo4: "" });
   const [guardandoTarjeta, setGuardandoTarjeta] = useState(false);
 
+  // Estados para direcciones
+  const [direcciones, setDirecciones] = useState([]);
+  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [nuevaDireccion, setNuevaDireccion] = useState({
+    nombre: "", apellido: "", nombre_calle: "", descripcion: "", codigo_postal: "", numero_telefono: ""
+  });
+  const [guardandoDireccion, setGuardandoDireccion] = useState(false);
+
   useEffect(() => {
     const fetchDatos = async () => {
       setLoading(true);
@@ -94,6 +102,15 @@ const Perfil = () => {
           .order("creado_en", { ascending: false });
 
         setMetodosPago(metodosData || []);
+
+        // 4. Obtener direcciones
+        const { data: direccionesData } = await supabase
+          .from("direcciones")
+          .select("*")
+          .eq("id_usuario", user.id)
+          .order("creado_en", { ascending: false });
+
+        setDirecciones(direccionesData || []);
       }
       setLoading(false);
     };
@@ -232,6 +249,46 @@ const Perfil = () => {
       setMensaje({ texto: "Error al añadir la tarjeta.", tipo: "danger" });
     } finally {
       setGuardandoTarjeta(false);
+    }
+  };
+
+  const agregarDireccion = async () => {
+    if (!nuevaDireccion.nombre_calle || !nuevaDireccion.numero_telefono) {
+      alert("Calle y teléfono son requeridos.");
+      return;
+    }
+    setGuardandoDireccion(true);
+    try {
+      const { data, error } = await supabase.from("direcciones").insert({
+        ...nuevaDireccion,
+        id_usuario: user.id
+      }).select().single();
+
+      if (error) throw error;
+
+      setDirecciones([data, ...direcciones]);
+      setShowAddressModal(false);
+      setNuevaDireccion({
+        nombre: "", apellido: "", nombre_calle: "", descripcion: "", codigo_postal: "", numero_telefono: ""
+      });
+      setMensaje({ texto: "Dirección añadida con éxito.", tipo: "success" });
+    } catch (err) {
+      console.error(err);
+      setMensaje({ texto: "Error al guardar dirección.", tipo: "danger" });
+    } finally {
+      setGuardandoDireccion(false);
+    }
+  };
+
+  const eliminarDireccion = async (id) => {
+    if (!window.confirm("¿Eliminar esta dirección?")) return;
+    try {
+      const { error } = await supabase.from("direcciones").delete().eq("id_direccion", id);
+      if (error) throw error;
+      setDirecciones(direcciones.filter(d => d.id_direccion !== id));
+    } catch (err) {
+      console.error(err);
+      alert("No se pudo eliminar la dirección.");
     }
   };
 
@@ -374,6 +431,58 @@ const Perfil = () => {
                     ))}
                   </tbody>
                 </Table>
+              )}
+            </Card.Body>
+          </Card>
+        </Tab>
+
+        {/* PESTAÑA DIRECCIONES */}
+        <Tab eventKey="direcciones" title={<span><i className="bi bi-geo-alt me-2"></i>Direcciones</span>}>
+          <Card className="shadow-sm border-0 mt-3">
+            <Card.Body className="p-4">
+              <div className="d-flex justify-content-between align-items-center border-bottom pb-2 mb-4">
+                <h5 className="mb-0">Mis Direcciones de Entrega</h5>
+                <Button 
+                  variant="primary" 
+                  size="sm" 
+                  className="rounded-pill px-3"
+                  onClick={() => setShowAddressModal(true)}
+                >
+                  <i className="bi bi-plus-lg me-1"></i>Añadir Dirección
+                </Button>
+              </div>
+
+              {direcciones.length === 0 ? (
+                <div className="text-center p-5 bg-light rounded">
+                  <i className="bi bi-geo text-muted mb-3" style={{ fontSize: '3rem' }}></i>
+                  <p className="text-muted">No has guardado ninguna dirección todavía.</p>
+                </div>
+              ) : (
+                <Row xs={1} md={2} className="g-3">
+                  {direcciones.map(dir => (
+                    <Col key={dir.id_direccion}>
+                      <Card className="h-100 border shadow-sm">
+                        <Card.Body>
+                          <div className="d-flex justify-content-between">
+                            <h6 className="fw-bold">{dir.nombre} {dir.apellido}</h6>
+                            <Button variant="link" className="text-danger p-0" onClick={() => eliminarDireccion(dir.id_direccion)}>
+                              <i className="bi bi-trash"></i>
+                            </Button>
+                          </div>
+                          <div className="small text-muted mb-2">
+                            <i className="bi bi-geo-alt-fill me-1 text-primary"></i>
+                            {dir.nombre_calle}
+                          </div>
+                          {dir.descripcion && <div className="small mb-2 italic">"{dir.descripcion}"</div>}
+                          <div className="d-flex justify-content-between mt-3 align-items-center">
+                            <Badge bg="light" text="dark" className="border">CP: {dir.codigo_postal || 'N/A'}</Badge>
+                            <span className="small text-muted"><i className="bi bi-telephone me-1"></i>{dir.numero_telefono}</span>
+                          </div>
+                        </Card.Body>
+                      </Card>
+                    </Col>
+                  ))}
+                </Row>
               )}
             </Card.Body>
           </Card>
@@ -529,6 +638,94 @@ const Perfil = () => {
                 <Button variant="light" onClick={() => setShowAddModal(false)}>Cancelar</Button>
                 <Button variant="dark" onClick={agregarNuevaTarjeta} disabled={guardandoTarjeta}>
                   {guardandoTarjeta ? 'Guardando...' : 'Añadir Tarjeta'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL PARA AÑADIR DIRECCIÓN */}
+      {showAddressModal && (
+        <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content border-0 shadow">
+              <div className="modal-header bg-primary text-white">
+                <h5 className="modal-title"><i className="bi bi-geo-alt me-2"></i>Nueva Dirección</h5>
+                <button type="button" className="btn-close btn-close-white" onClick={() => setShowAddressModal(false)}></button>
+              </div>
+              <div className="modal-body p-4">
+                <Row className="g-3">
+                  <Col md={6}>
+                    <Form.Group>
+                      <Form.Label className="small fw-bold">Nombre</Form.Label>
+                      <Form.Control 
+                        size="sm" 
+                        value={nuevaDireccion.nombre}
+                        onChange={(e) => setNuevaDireccion({...nuevaDireccion, nombre: e.target.value})}
+                      />
+                    </Form.Group>
+                  </Col>
+                  <Col md={6}>
+                    <Form.Group>
+                      <Form.Label className="small fw-bold">Apellido</Form.Label>
+                      <Form.Control 
+                        size="sm" 
+                        value={nuevaDireccion.apellido}
+                        onChange={(e) => setNuevaDireccion({...nuevaDireccion, apellido: e.target.value})}
+                      />
+                    </Form.Group>
+                  </Col>
+                  <Col xs={12}>
+                    <Form.Group>
+                      <Form.Label className="small fw-bold">Calle y Número</Form.Label>
+                      <Form.Control 
+                        size="sm" 
+                        placeholder="Ej: Av. Reforma 123"
+                        value={nuevaDireccion.nombre_calle}
+                        onChange={(e) => setNuevaDireccion({...nuevaDireccion, nombre_calle: e.target.value})}
+                      />
+                    </Form.Group>
+                  </Col>
+                  <Col xs={12}>
+                    <Form.Group>
+                      <Form.Label className="small fw-bold">Referencias / Descripción</Form.Label>
+                      <Form.Control 
+                        size="sm" 
+                        as="textarea" rows={2} 
+                        placeholder="Ej: Portón verde, frente al parque..."
+                        value={nuevaDireccion.descripcion}
+                        onChange={(e) => setNuevaDireccion({...nuevaDireccion, descripcion: e.target.value})}
+                      />
+                    </Form.Group>
+                  </Col>
+                  <Col md={6}>
+                    <Form.Group>
+                      <Form.Label className="small fw-bold">Código Postal</Form.Label>
+                      <Form.Control 
+                        size="sm" 
+                        value={nuevaDireccion.codigo_postal}
+                        onChange={(e) => setNuevaDireccion({...nuevaDireccion, codigo_postal: e.target.value})}
+                      />
+                    </Form.Group>
+                  </Col>
+                  <Col md={6}>
+                    <Form.Group>
+                      <Form.Label className="small fw-bold">Teléfono</Form.Label>
+                      <Form.Control 
+                        size="sm" 
+                        type="tel"
+                        value={nuevaDireccion.numero_telefono}
+                        onChange={(e) => setNuevaDireccion({...nuevaDireccion, numero_telefono: e.target.value})}
+                      />
+                    </Form.Group>
+                  </Col>
+                </Row>
+              </div>
+              <div className="modal-footer border-0">
+                <Button variant="light" onClick={() => setShowAddressModal(false)}>Cancelar</Button>
+                <Button variant="primary" onClick={agregarDireccion} disabled={guardandoDireccion}>
+                  {guardandoDireccion ? 'Guardando...' : 'Guardar Dirección'}
                 </Button>
               </div>
             </div>

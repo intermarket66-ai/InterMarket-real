@@ -1,12 +1,43 @@
 import React, { useState } from 'react';
-import { Modal, Button, Row, Col, Badge, Spinner } from 'react-bootstrap';
+import { Modal, Button, Row, Col, Badge, Spinner, Form } from 'react-bootstrap';
 import { supabase } from '../../database/supabaseconfig';
 import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { enviarNotificacionPorCorreo } from '../../services/emailService';
 
 const CarritoModal = ({ mostrar, setMostrar, carrito, setCarrito, total, onCompraExitosa }) => {
     const { user, session } = useAuth();
+    const navegar = useNavigate();
     const [procesando, setProcesando] = useState(false);
+    const [direcciones, setDirecciones] = useState([]);
+    const [idDireccionSel, setIdDireccionSel] = useState("");
+    const [cargandoDirecciones, setCargandoDirecciones] = useState(false);
+
+    React.useEffect(() => {
+        if (mostrar && user) {
+            cargarDirecciones();
+        }
+    }, [mostrar, user]);
+
+    const cargarDirecciones = async () => {
+        setCargandoDirecciones(true);
+        try {
+            const { data } = await supabase
+                .from("direcciones")
+                .select("*")
+                .eq("id_usuario", user.id)
+                .order("creado_en", { ascending: false });
+            
+            setDirecciones(data || []);
+            if (data && data.length > 0) {
+                setIdDireccionSel(data[0].id_direccion);
+            }
+        } catch (err) {
+            console.error("Error cargando direcciones:", err);
+        } finally {
+            setCargandoDirecciones(false);
+        }
+    };
 
     const actualizarCantidad = (id_producto, nuevaCantidad) => {
         if (nuevaCantidad < 1) return;
@@ -39,6 +70,11 @@ const CarritoModal = ({ mostrar, setMostrar, carrito, setCarrito, total, onCompr
             alert("Debes iniciar sesión como comprador para realizar una compra.");
             return;
         }
+
+        if (!idDireccionSel) {
+            alert("Por favor, selecciona una dirección de entrega.");
+            return;
+        }
         
         try {
             setProcesando(true);
@@ -50,7 +86,10 @@ const CarritoModal = ({ mostrar, setMostrar, carrito, setCarrito, total, onCompr
                     'Content-Type': 'application/json',
                     Authorization: session?.access_token ? `Bearer ${session.access_token}` : '',
                 },
-                body: JSON.stringify({ carrito }),
+                body: JSON.stringify({ 
+                    carrito, 
+                    id_direccion: idDireccionSel 
+                }),
             });
 
             if (!response.ok) {
@@ -64,6 +103,7 @@ const CarritoModal = ({ mostrar, setMostrar, carrito, setCarrito, total, onCompr
                 // Save cart temporarily so we can process it after redirect
                 localStorage.setItem('carritoPendiente', JSON.stringify(carrito));
                 localStorage.setItem('totalPendiente', total.toString());
+                localStorage.setItem('direccionPendiente', idDireccionSel);
                 
                 // Redirect to Stripe
                 window.location.href = data.url;
@@ -89,6 +129,11 @@ const CarritoModal = ({ mostrar, setMostrar, carrito, setCarrito, total, onCompr
             return;
         }
 
+        if (!idDireccionSel) {
+            alert("Por favor, selecciona una dirección de entrega.");
+            return;
+        }
+
         try {
             setProcesando(true);
             const idOperacion = Date.now().toString(); // ID único para esta operación
@@ -98,7 +143,12 @@ const CarritoModal = ({ mostrar, setMostrar, carrito, setCarrito, total, onCompr
                     'Content-Type': 'application/json',
                     Authorization: session?.access_token ? `Bearer ${session.access_token}` : '',
                 },
-                body: JSON.stringify({ carrito, total, id_operacion: idOperacion }),
+                body: JSON.stringify({ 
+                    carrito, 
+                    total, 
+                    id_operacion: idOperacion,
+                    id_direccion: idDireccionSel
+                }),
             });
 
             if (!response.ok) {
@@ -189,6 +239,30 @@ const CarritoModal = ({ mostrar, setMostrar, carrito, setCarrito, total, onCompr
                         ))}
 
                         <div className="mt-4 pt-3 border-top">
+                            <h6 className="fw-bold mb-3"><i className="bi bi-geo-alt me-2 text-primary"></i>Dirección de Entrega</h6>
+                            
+                            {direcciones.length === 0 ? (
+                                <div className="alert alert-warning py-2 small d-flex justify-content-between align-items-center">
+                                    <span>No tienes direcciones guardadas.</span>
+                                    <Button size="sm" variant="warning" onClick={() => { setMostrar(false); navegar("/perfil"); }}>
+                                        Añadir ahora
+                                    </Button>
+                                </div>
+                            ) : (
+                                <Form.Select 
+                                    className="mb-3"
+                                    value={idDireccionSel}
+                                    onChange={(e) => setIdDireccionSel(e.target.value)}
+                                    disabled={procesando}
+                                >
+                                    {direcciones.map(dir => (
+                                        <option key={dir.id_direccion} value={dir.id_direccion}>
+                                            {dir.nombre_calle} ({dir.nombre} {dir.apellido})
+                                        </option>
+                                    ))}
+                                </Form.Select>
+                            )}
+
                             <Row>
                                 <Col>
                                     <h5>Total a pagar:</h5>

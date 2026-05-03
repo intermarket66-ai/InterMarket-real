@@ -25,6 +25,7 @@ const CheckoutSuccess = () => {
 
             const carritoPendienteStr = localStorage.getItem('carritoPendiente');
             const totalPendienteStr = localStorage.getItem('totalPendiente');
+            const direccionPendiente = localStorage.getItem('direccionPendiente');
             const sessionId = new URLSearchParams(location.search).get('session_id');
 
             if (!carritoPendienteStr || !totalPendienteStr) {
@@ -50,7 +51,8 @@ const CheckoutSuccess = () => {
                     body: JSON.stringify({
                         session_id: sessionId,
                         carrito,
-                        total
+                        total,
+                        id_direccion: direccionPendiente
                     }),
                 });
 
@@ -73,6 +75,7 @@ const CheckoutSuccess = () => {
                     console.log("Detectada venta duplicada, marcando como éxito.");
                     localStorage.removeItem('carritoPendiente');
                     localStorage.removeItem('totalPendiente');
+                    localStorage.removeItem('direccionPendiente');
                     localStorage.removeItem('carrito');
                     window.dispatchEvent(new Event('carritoActualizado'));
                     setProcesando(false);
