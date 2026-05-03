@@ -16,6 +16,17 @@ const Mensajes = () => {
     const [textoMensaje, setTextoMensaje] = useState("");
     const [mensajes, setMensajes] = useState([]);
     const [miPerfilId, setMiPerfilId] = useState(null);
+    const scrollRef = React.useRef(null);
+
+    const scrollToBottom = () => {
+        if (scrollRef.current) {
+            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [mensajes]);
 
     // 1. Obtener mi Perfil ID
     useEffect(() => {
@@ -192,29 +203,35 @@ const Mensajes = () => {
                                         className={`mensajes-item ${chatActivo?.id_chat === chat.id_chat ? "activo" : ""}`}
                                         onClick={() => setChatActivo(chat)}
                                     >
-                                        <div className="mensajes-avatar">
-                                            {(chat.vendedor_id || "U").slice(0, 1).toUpperCase()}
+                                        <div className="mensajes-avatar" style={{ backgroundColor: chatActivo?.id_chat === chat.id_chat ? 'var(--color-primario)' : '#94a3b8' }}>
+                                            {(chat.productos?.nombre_producto || "P").charAt(0).toUpperCase()}
                                         </div>
                                         <div className="mensajes-item-body">
                                             <div className="mensajes-item-top">
-                                                <strong>{`Chat ${chat.id_chat.slice(0, 8)}`}</strong>
-                                                <small>{new Date(chat.creado_en).toLocaleDateString()}</small>
+                                                <strong className="text-truncate" style={{ maxWidth: '140px' }}>
+                                                    {chat.productos?.nombre_producto || "Chat de Producto"}
+                                                </strong>
+                                                <small className="text-muted" style={{ fontSize: '0.65rem' }}>
+                                                    {new Date(chat.creado_en).toLocaleDateString()}
+                                                </small>
                                             </div>
-                                            <small className="text-muted text-truncate" style={{ display: 'block', maxWidth: '200px' }}>
-                                                {chat.productos?.nombre_producto || `Producto: ${chat.producto_id?.slice(0, 10)}...`}
-                                            </small>
+                                            <div className="d-flex justify-content-between align-items-center">
+                                                <small className="text-muted text-truncate" style={{ fontSize: '0.75rem' }}>
+                                                    ID: {chat.id_chat.slice(0, 8)}
+                                                </small>
+                                                <Button
+                                                    variant="link"
+                                                    size="sm"
+                                                    className="text-danger p-0 ms-2"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        eliminarChat(chat.id_chat);
+                                                    }}
+                                                >
+                                                    <i className="bi bi-trash-fill" style={{ fontSize: '0.8rem' }} />
+                                                </Button>
+                                            </div>
                                         </div>
-                                        <Button
-                                            variant="link"
-                                            size="sm"
-                                            className="text-danger text-decoration-none"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                eliminarChat(chat.id_chat);
-                                            }}
-                                        >
-                                            <i className="bi bi-trash" />
-                                        </Button>
                                     </button>
                                 ))}
                                 {!cargando && chatsFiltrados.length === 0 && (
@@ -229,17 +246,17 @@ const Mensajes = () => {
                     <section className="mensajes-chat">
                         {chatActivo ? (
                             <>
-                                <header className="mensajes-chat-header">
+                                <header className="mensajes-chat-header shadow-sm">
                                     <div className="mensajes-avatar grande">
-                                        {(chatActivo.vendedor_id || "U").slice(0, 1).toUpperCase()}
+                                        {(chatActivo.productos?.nombre_producto || "P").charAt(0).toUpperCase()}
                                     </div>
-                                    <div>
-                                        <strong>{`Chat ${chatActivo.id_chat.slice(0, 8)}`}</strong>
-                                        <small className="d-block text-muted">Producto: {chatActivo.producto_id}</small>
+                                    <div className="ms-3">
+                                        <h6 className="mb-0 fw-bold">{chatActivo.productos?.nombre_producto || "Conversación"}</h6>
+                                        <small className="text-muted">Chat ID: {chatActivo.id_chat.slice(0, 12)}</small>
                                     </div>
                                 </header>
 
-                                <div className="mensajes-chat-cuerpo">
+                                <div className="mensajes-chat-cuerpo" ref={scrollRef}>
                                     {mensajes.map((mensaje) => {
                                         const esMio = mensaje.emisor_id === miPerfilId;
                                         return (
@@ -277,8 +294,12 @@ const Mensajes = () => {
                                 </footer>
                             </>
                         ) : (
-                            <div className="h-100 d-flex justify-content-center align-items-center text-muted">
-                                Selecciona un chat para comenzar.
+                            <div className="h-100 d-flex flex-column justify-content-center align-items-center text-muted bg-light rounded-4 border-dashed border-2">
+                                <div className="bg-white p-4 rounded-circle shadow-sm mb-3">
+                                    <i className="bi bi-chat-dots text-primary" style={{ fontSize: '3rem' }} />
+                                </div>
+                                <h5 className="fw-bold">Tus Mensajes</h5>
+                                <p className="small px-4 text-center">Selecciona una conversación de la izquierda para ver los detalles y mensajes del producto.</p>
                             </div>
                         )}
                     </section>
