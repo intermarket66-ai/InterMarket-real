@@ -394,10 +394,7 @@ const Productos = () => {
 
     return (
         <Container>
-            <br />
-             <br />
-              <br />
-               <br />
+
             <Row className="align-items-center mb-3">
                 <Col xs={9}>
                     <h3><i className="bi bi-box-seam me-2"></i> Productos</h3>

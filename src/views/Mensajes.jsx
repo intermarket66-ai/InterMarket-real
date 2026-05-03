@@ -168,11 +168,7 @@ const Mensajes = () => {
 
     return (
         <Container className="mensajes-page">
-            <br />
-            <br />
-            <br />
-            <br />
-
+          
             <Row className="g-3">
                 <Col lg={4}>
                     <section className="mensajes-lista">

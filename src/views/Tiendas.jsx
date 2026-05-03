@@ -252,10 +252,8 @@ const Tiendas = () => {
 
     return (
         <Container>
-            <br />
-            <br />
-            <br />
-            <br />
+
+
             <Row className="align-items-center mb-3">
                 <Col xs={9}>
                     <h3><i className="bi bi-shop-window me-2" /> Tiendas</h3>
