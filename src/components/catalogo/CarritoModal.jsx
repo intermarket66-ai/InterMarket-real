@@ -73,7 +73,11 @@ const CarritoModal = ({ mostrar, setMostrar, carrito, setCarrito, total, onCompr
             
         } catch (err) {
             console.error("Error al procesar compra:", err);
-            alert("Ocurrió un error al procesar tu compra.");
+            // Mostrar mensaje más descriptivo si es posible
+            const mensajeError = err.message.includes('Invalid URL') 
+                ? "Error de URL: Posiblemente una imagen de producto es demasiado grande o inválida para Stripe."
+                : `Ocurrió un error al procesar tu compra: ${err.message}`;
+            alert(mensajeError);
         } finally {
             setProcesando(false);
         }

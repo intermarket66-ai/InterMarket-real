@@ -101,19 +101,36 @@ export const handler = async (event, context) => {
             stripeCustomerId = await getStripeCustomerId(email, userId);
         }
 
-        const line_items = carrito.map((item) => ({
-            price_data: {
-                currency: 'usd',
-                product_data: {
-                    name: item.nombre_producto,
-                    images: item.imagen_url && item.imagen_url.length > 0 ? [item.imagen_url[0]] : [],
-                },
-                unit_amount: Math.round(item.precio_venta * 100),
-            },
-            quantity: item.cantidad,
-        }));
+        const line_items = carrito.map((item) => {
+            // Validar que la imagen sea una URL absoluta y no un base64 o algo muy largo
+            let images = [];
+            if (item.imagen_url && Array.isArray(item.imagen_url) && item.imagen_url.length > 0) {
+                const firstImage = item.imagen_url[0];
+                // Stripe solo acepta URLs absolutas (http/https) de menos de 2048 chars
+                if (typeof firstImage === 'string' && 
+                    firstImage.startsWith('http') && 
+                    firstImage.length < 2000) {
+                    images = [firstImage];
+                } else {
+                    console.warn(`Imagen omitida para producto ${item.nombre_producto} por ser URL inválida o demasiado larga.`);
+                }
+            }
 
-        const origin = event.headers.origin || 'http://localhost:5173';
+            return {
+                price_data: {
+                    currency: 'usd',
+                    product_data: {
+                        name: item.nombre_producto,
+                        images: images,
+                    },
+                    unit_amount: Math.round(item.precio_venta * 100),
+                },
+                quantity: item.cantidad,
+            };
+        });
+
+        const origin = event.headers.origin || event.headers.Origin || 'http://localhost:5173';
+        console.log('Origin detectado:', origin);
 
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
@@ -134,11 +151,14 @@ export const handler = async (event, context) => {
         };
 
     } catch (error) {
-        console.error('Error creating session:', error);
+        console.error('Error detallado en create-checkout-session:', error);
         return {
             statusCode: 500,
             headers,
-            body: JSON.stringify({ error: error.message }),
+            body: JSON.stringify({ 
+                error: error.message,
+                detail: error.stack
+            }),
         };
     }
 };
