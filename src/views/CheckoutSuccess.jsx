@@ -49,56 +49,37 @@ const CheckoutSuccess = () => {
                 const carrito = JSON.parse(carritoPendienteStr);
                 const total = parseFloat(totalPendienteStr);
 
-                // Obtener el perfil del comprador
-                const { data: perfilData } = await supabase.from('perfiles').select('perfil_id, usuarios(username)').eq('id_usuario', user.id).maybeSingle();
-                const perfilId = perfilData?.perfil_id;
-                const nombreComprador = perfilData?.usuarios?.username || 'Un comprador';
+                // Llamar a la función de Netlify para procesar todo en el servidor
+                const response = await fetch('/.netlify/functions/complete-order', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${session.access_token}`,
+                    },
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        carrito,
+                        total
+                    }),
+                });
 
-                if (!perfilId) throw new Error("Perfil de comprador no encontrado.");
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Error al procesar la orden final');
+                }
 
-                // 1. Crear Venta principal
-                const { data: venta, error: ventaError } = await supabase.from('ventas').insert({
-                    id_usuario: user.id,
-                    monto_total: total,
-                    id_estado: 1 // Pendiente
-                }).select().single();
-
-                if (ventaError) throw ventaError;
-
-                // 2. Insertar Pedidos (Order items)
-                const pedidos = carrito.map(item => ({
-                    perfil_id: perfilId,
-                    venta_id: venta.venta_id,
-                    producto_id: item.id_producto,
-                    id_estado: 1, // Pendiente
-                    precio_unitario: item.precio_venta
-                }));
-
-                await supabase.from('pedidos').insert(pedidos);
-
-                // 3. Enviar notificaciones a los vendedores
-                const tiendasIds = [...new Set(carrito.map(item => item.id_tienda).filter(Boolean))];
-
-                for (const idTienda of tiendasIds) {
-                    const { data: vendedorData } = await supabase
-                        .from('perfiles')
-                        .select('perfil_id, usuarios(email)')
-                        .eq('id_tienda', idTienda)
-                        .maybeSingle();
-
-                    if (vendedorData?.perfil_id) {
-                        const titulo = '¡Nuevo pedido recibido!';
-                        const msj = `${nombreComprador} acaba de realizar una compra en tu tienda por Stripe. Revisa tu panel de ventas.`;
-                        await supabase.from('notificaciones').insert([{
-                            usuario_id: vendedorData.perfil_id,
-                            titulo: titulo,
-                            mensaje: msj
-                        }]);
-
-                        if (vendedorData.usuarios?.email) {
-                            enviarNotificacionPorCorreo(vendedorData.usuarios.email, titulo, msj);
-                        }
-                    }
+                // Opcional: También guardar el método de pago si quieres
+                try {
+                    await fetch('/.netlify/functions/save-payment-method', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: `Bearer ${session.access_token}`,
+                        },
+                        body: JSON.stringify({ session_id: sessionId }),
+                    });
+                } catch (err) {
+                    console.warn('No se pudo guardar el método de pago Stripe:', err);
                 }
 
                 // Limpiar todo después del éxito
@@ -108,7 +89,7 @@ const CheckoutSuccess = () => {
                 window.dispatchEvent(new Event('carritoActualizado'));
                 
             } catch (err) {
-                console.error("Error al confirmar la venta en Supabase:", err);
+                console.error("Error al confirmar la venta:", err);
                 setError(err.message);
             } finally {
                 setProcesando(false);
@@ -116,7 +97,7 @@ const CheckoutSuccess = () => {
         };
 
         confirmarCompra();
-    }, [user]);
+    }, [user, session]);
 
     return (
         <Container className="py-5 mt-5">
