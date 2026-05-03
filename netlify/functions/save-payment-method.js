@@ -45,6 +45,15 @@ export const handler = async (event) => {
       };
     }
 
+    // Ignorar si es un pago simulado (no hay tarjeta real en Stripe)
+    if (session_id.startsWith('simulado_')) {
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({ success: true, message: 'Pago simulado: No se requiere guardar tarjeta.' }),
+      };
+    }
+
     const authHeader = event.headers.authorization || event.headers.Authorization;
     if (!authHeader || !authHeader.toLowerCase().startsWith('bearer ')) {
       return {
