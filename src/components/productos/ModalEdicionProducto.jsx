@@ -129,7 +129,6 @@ const ModalEdicionProducto = ({
                                 </Form.Select>
                             </Form.Group>
                         </Col>
-                    <Row>
                         <Col md={6}>
                             <Form.Group className="mb-3">
                                 <Form.Label>Stock Disponible</Form.Label>
@@ -144,6 +143,9 @@ const ModalEdicionProducto = ({
                                 <Form.Text className="text-muted small">Unidades disponibles actualmente.</Form.Text>
                             </Form.Group>
                         </Col>
+                    </Row>
+
+                    <Row>
                         <Col md={6}>
                             <Form.Group className="mb-3">
                                 <Form.Label>Nuevas Imágenes (reemplazan actuales)</Form.Label>
