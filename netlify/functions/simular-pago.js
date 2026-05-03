@@ -36,6 +36,11 @@ export const handler = async (event) => {
         const token = authHeader.split(' ')[1];
         const supabase = createClient(supabaseUrl, supabaseAnonKey, {
             auth: { persistSession: false, autoRefreshToken: false },
+            global: {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            },
         });
 
         const { data: authUserData, error: authUserError } = await supabase.auth.getUser(token);

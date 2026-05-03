@@ -16,6 +16,11 @@ const Perfil = () => {
   const [fotoUrl, setFotoUrl] = useState("");
   const [archivoNuevo, setArchivoNuevo] = useState(null);
   const [mensaje, setMensaje] = useState({ texto: "", tipo: "" });
+  
+  // Estados para añadir tarjeta
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [nuevaTarjeta, setNuevaTarjeta] = useState({ tipo: "Visa", ultimo4: "" });
+  const [guardandoTarjeta, setGuardandoTarjeta] = useState(false);
 
   useEffect(() => {
     const fetchDatos = async () => {
@@ -201,6 +206,35 @@ const Perfil = () => {
     }
   };
 
+  const agregarNuevaTarjeta = async () => {
+    if (!nuevaTarjeta.ultimo4 || nuevaTarjeta.ultimo4.length !== 4) {
+      alert("Por favor, ingresa los últimos 4 dígitos.");
+      return;
+    }
+    setGuardandoTarjeta(true);
+    try {
+      const { data, error } = await supabase.from("metodos_pago").insert({
+        id_usuario: user.id,
+        id_stripe_customer: 'cus_manual',
+        id_stripe_payment_method: 'pm_manual_' + Date.now(),
+        ultimo4: nuevaTarjeta.ultimo4,
+        tipo_metodo: nuevaTarjeta.tipo,
+      }).select().single();
+
+      if (error) throw error;
+
+      setMetodosPago([data, ...metodosPago]);
+      setShowAddModal(false);
+      setNuevaTarjeta({ tipo: "Visa", ultimo4: "" });
+      setMensaje({ texto: "Tarjeta añadida correctamente.", tipo: "success" });
+    } catch (err) {
+      console.error(err);
+      setMensaje({ texto: "Error al añadir la tarjeta.", tipo: "danger" });
+    } finally {
+      setGuardandoTarjeta(false);
+    }
+  };
+
   if (loading) {
     return (
       <Container className="mt-5 text-center">
@@ -291,7 +325,17 @@ const Perfil = () => {
         <Tab eventKey="metodos" title={<span><i className="bi bi-credit-card me-2"></i>Métodos de Pago</span>}>
           <Card className="shadow-sm border-0 mt-3">
             <Card.Body className="p-4">
-              <h5 className="border-bottom pb-2 mb-4">Tarjetas guardadas</h5>
+              <div className="d-flex justify-content-between align-items-center border-bottom pb-2 mb-4">
+                <h5 className="mb-0">Tarjetas guardadas</h5>
+                <Button 
+                  variant="primary" 
+                  size="sm" 
+                  className="rounded-pill px-3"
+                  onClick={() => setShowAddModal(true)}
+                >
+                  <i className="bi bi-plus-lg me-1"></i>Añadir Tarjeta
+                </Button>
+              </div>
 
               {metodosPago.length === 0 ? (
                 <div className="text-center p-5 bg-light rounded">
@@ -316,14 +360,14 @@ const Perfil = () => {
                         <td>**** **** **** {metodo.ultimo4 || '----'}</td>
                         <td className="text-truncate" style={{ maxWidth: 180 }}>{metodo.id_stripe_payment_method || '-'}</td>
                         <td>{metodo.creado_en ? new Date(metodo.creado_en).toLocaleDateString() : '-'}</td>
-                        <td>
+                         <td>
                           <Button
-                            variant="danger"
+                            variant="outline-danger"
                             size="sm"
                             onClick={() => eliminarTarjeta(metodo.id_metodo_pago)}
                             disabled={eliminandoTarjetaId === metodo.id_metodo_pago}
                           >
-                            {eliminandoTarjetaId === metodo.id_metodo_pago ? 'Eliminando...' : 'Eliminar'}
+                            {eliminandoTarjetaId === metodo.id_metodo_pago ? '...' : <i className="bi bi-trash"></i>}
                           </Button>
                         </td>
                       </tr>
@@ -439,6 +483,58 @@ const Perfil = () => {
           </Card>
         </Tab>
       </Tabs>
+      {/* MODAL PARA AÑADIR TARJETA */}
+      {showAddModal && (
+        <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content border-0 shadow">
+              <div className="modal-header bg-dark text-white">
+                <h5 className="modal-title"><i className="bi bi-credit-card-2-front me-2"></i>Añadir Nueva Tarjeta</h5>
+                <button type="button" className="btn-close btn-close-white" onClick={() => setShowAddModal(false)}></button>
+              </div>
+              <div className="modal-body p-4">
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-bold">Tipo de Tarjeta</Form.Label>
+                  <Form.Select 
+                    value={nuevaTarjeta.tipo}
+                    onChange={(e) => setNuevaTarjeta({...nuevaTarjeta, tipo: e.target.value})}
+                  >
+                    <option value="Visa">Visa</option>
+                    <option value="Mastercard">Mastercard</option>
+                    <option value="American Express">American Express</option>
+                    <option value="Débito">Tarjeta de Débito</option>
+                  </Form.Select>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-bold">Últimos 4 Dígitos</Form.Label>
+                  <Form.Control
+                    type="text"
+                    maxLength="4"
+                    placeholder="Eje: 4242"
+                    value={nuevaTarjeta.ultimo4}
+                    onChange={(e) => setNuevaTarjeta({...nuevaTarjeta, ultimo4: e.target.value.replace(/\D/g, '')})}
+                  />
+                  <Form.Text className="text-muted">
+                    Por seguridad, solo guardamos los últimos 4 números.
+                  </Form.Text>
+                </Form.Group>
+
+                <Alert variant="info" className="small d-flex align-items-center">
+                  <i className="bi bi-info-circle-fill me-2 fs-5"></i>
+                  Esta tarjeta se añadirá como un método de pago simulado para tus compras.
+                </Alert>
+              </div>
+              <div className="modal-footer border-0">
+                <Button variant="light" onClick={() => setShowAddModal(false)}>Cancelar</Button>
+                <Button variant="dark" onClick={agregarNuevaTarjeta} disabled={guardandoTarjeta}>
+                  {guardandoTarjeta ? 'Guardando...' : 'Añadir Tarjeta'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </Container>
   );
 };

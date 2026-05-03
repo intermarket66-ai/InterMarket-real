@@ -66,9 +66,11 @@ export const handler = async (event) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       },
     });
 
@@ -98,19 +100,21 @@ export const handler = async (event) => {
 
     const stripeClient = new Stripe(stripeSecretKey);
 
-    if (metodo.id_stripe_payment_method) {
+    // Solo intentar desconectar de Stripe si NO es un método manual o simulado
+    const isStripeId = metodo.id_stripe_payment_method && 
+                       !metodo.id_stripe_payment_method.startsWith('pm_manual_') && 
+                       !metodo.id_stripe_payment_method.startsWith('pm_simulado_');
+
+    if (isStripeId) {
       try {
         await stripeClient.paymentMethods.detach(metodo.id_stripe_payment_method);
       } catch (stripeError) {
+        // Si el recurso ya no existe en Stripe, ignoramos el error para proceder a borrar el registro local
         if (stripeError?.code === 'resource_missing') {
-          console.warn('Método de pago Stripe no encontrado, se eliminará el registro local.', stripeError.message);
+          console.warn('Método de pago Stripe no encontrado localmente.', stripeError.message);
         } else {
-          console.error('Error desconectando método de pago en Stripe:', stripeError);
-          return {
-            statusCode: 500,
-            headers,
-            body: JSON.stringify({ error: 'Error eliminando la tarjeta en Stripe.' }),
-          };
+          console.error('Error desconectando de Stripe:', stripeError);
+          // Opcionalmente, puedes decidir borrarlo de todos modos si quieres que la DB local mande
         }
       }
     }
