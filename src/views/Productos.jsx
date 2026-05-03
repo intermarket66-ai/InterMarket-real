@@ -43,8 +43,9 @@ const Productos = () => {
         precio_compra: '',
         categoria_id: '',
         url_imagenes: '',
-        id_estado: '2'
-    }); 
+        id_estado: '2',
+        stock: ''
+    });
 
     // ================== CARGAR DATOS ==================
     const cargarProductos = async () => {
@@ -289,7 +290,8 @@ const Productos = () => {
                 categoria_id: categoriaId,
                 id_estado: Number.isInteger(idEstado) ? idEstado : 2,
                 imagen_url: urlsPublicas.length > 0 ? urlsPublicas : null,
-                id_tienda: idTienda
+                id_tienda: idTienda,
+                stock: nuevoProducto.stock !== '' ? parseInt(nuevoProducto.stock, 10) : null
             };
 
             const { error } = await supabase.from("productos").insert([payload]);
@@ -305,7 +307,8 @@ const Productos = () => {
                 categoria_id: "",
                 url_imagenes: "",
                 archivo_imagen: null,
-                id_estado: "2"
+                id_estado: "2",
+                stock: ''
             });
             setToast({ mostrar: true, mensaje: "Producto registrado exitosamente.", tipo: "exito" });
         } catch (err) {
@@ -347,7 +350,8 @@ const Productos = () => {
                 precio_compra: Number(productoEditar.precio_compra),
                 categoria_id: Number(productoEditar.categoria_id),
                 id_estado: Number(productoEditar.id_estado || 2),
-                imagen_url: urlsPublicas.length > 0 ? urlsPublicas : null
+                imagen_url: urlsPublicas.length > 0 ? urlsPublicas : null,
+                stock: productoEditar.stock !== '' && productoEditar.stock !== undefined ? parseInt(productoEditar.stock, 10) : null
             };
 
             const { error } = await supabase

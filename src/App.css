@@ -27,6 +27,11 @@
   box-shadow: 0 12px 28px rgba(0,0,0,0.12) !important;
 }
 
+/* Botón cerrar blanco en headers con fondo oscuro */
+.modal-header[style*="gradient"] .btn-close {
+  filter: invert(1) grayscale(1) brightness(2);
+}
+
 body {
   background-color: var(--color-fondo) !important;
   color: #1e293b;

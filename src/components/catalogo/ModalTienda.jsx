@@ -55,45 +55,45 @@ const ModalTienda = ({ mostrar, onCerrar, tiendaId, onVerProducto }) => {
 
     return (
         <Modal show={mostrar} onHide={onCerrar} size="xl" centered scrollable>
-            <Modal.Header closeButton className="border-0 p-0 position-relative overflow-hidden" style={{ minHeight: '180px' }}>
-                {/* Banner de la Tienda */}
-                <div
-                    className="w-100 h-100 position-absolute top-0 start-0"
-                    style={{
-                        background: tienda?.imagen_url
-                            ? `linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.7)), url(${tienda.imagen_url}) center/cover`
-                            : 'linear-gradient(135deg, #0f4c5c 0%, #1a7a8a 100%)',
-                    }}
-                />
-                <div className="position-relative z-1 p-4 w-100 text-white">
-                    <div className="d-flex align-items-center gap-3 mb-3">
-                        {/* Logo de la Tienda */}
-                        <div
-                            className="rounded-circle shadow-lg d-flex align-items-center justify-content-center flex-shrink-0 border border-3 border-white"
-                            style={{
-                                width: '80px', height: '80px',
-                                background: tienda?.imagen_url ? `url(${tienda.imagen_url}) center/cover` : 'rgba(255,255,255,0.2)',
-                                backdropFilter: 'blur(4px)'
-                            }}
-                        >
-                            {!tienda?.imagen_url && <i className="bi bi-shop fs-2 text-white"></i>}
-                        </div>
-                        <div>
-                            <h3 className="fw-bold mb-1 text-white">{tienda?.nombre_tienda || 'Tienda'}</h3>
-                            <div className="d-flex align-items-center gap-3 flex-wrap">
-                                {promedio && (
-                                    <span className="d-flex align-items-center gap-1">
-                                        <Estrellas valor={parseFloat(promedio)} />
-                                        <small className="opacity-75">{promedio} ({calificaciones.length} reseñas)</small>
-                                    </span>
-                                )}
-                                <Badge bg="light" text="dark" className="px-3 py-1 rounded-pill">
-                                    <i className="bi bi-box-seam me-1"></i>{productos.length} productos
-                                </Badge>
-                            </div>
-                            {tienda?.descripcion && (
-                                <p className="mb-0 mt-1 opacity-75 small" style={{ maxWidth: '400px' }}>{tienda.descripcion}</p>
+            <Modal.Header
+                closeButton
+                className="border-0"
+                style={{
+                    background: 'linear-gradient(135deg, var(--color-primario) 0%, #1a7a8a 100%)',
+                    padding: '0.65rem 1.25rem',
+                }}
+            >
+                <div className="d-flex align-items-center gap-3 w-100">
+                    {/* Logo de la Tienda */}
+                    <div
+                        className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 border border-2 border-white"
+                        style={{
+                            width: '42px', height: '42px',
+                            background: tienda?.imagen_url
+                                ? `url(${tienda.imagen_url}) center/cover`
+                                : 'rgba(255,255,255,0.25)',
+                        }}
+                    >
+                        {!tienda?.imagen_url && <i className="bi bi-shop text-white"></i>}
+                    </div>
+
+                    {/* Info de la tienda */}
+                    <div className="flex-grow-1 min-width-0">
+                        <h6 className="fw-bold text-white mb-0 text-truncate" style={{ fontSize: '0.95rem' }}>
+                            {tienda?.nombre_tienda || 'Tienda'}
+                        </h6>
+                        <div className="d-flex align-items-center gap-2">
+                            {promedio && (
+                                <span className="d-flex align-items-center gap-1">
+                                    <Estrellas valor={parseFloat(promedio)} />
+                                    <small className="text-white opacity-75" style={{ fontSize: '0.72rem' }}>
+                                        {promedio} ({calificaciones.length})
+                                    </small>
+                                </span>
                             )}
+                            <Badge bg="light" text="dark" className="px-2 rounded-pill" style={{ fontSize: '0.68rem' }}>
+                                <i className="bi bi-box-seam me-1"></i>{productos.length} productos
+                            </Badge>
                         </div>
                     </div>
                 </div>

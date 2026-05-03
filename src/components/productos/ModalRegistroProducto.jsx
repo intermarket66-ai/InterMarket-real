@@ -28,8 +28,18 @@ const ModalRegistroProducto = ({
             centered
             size="lg"
         >
-            <Modal.Header closeButton>
-                <Modal.Title>Registrar Nuevo Producto</Modal.Title>
+            <Modal.Header
+                closeButton
+                className="border-0"
+                style={{
+                    background: 'linear-gradient(135deg, var(--color-primario) 0%, #1a7a8a 100%)',
+                    padding: '0.65rem 1.25rem',
+                }}
+            >
+                <Modal.Title className="fw-bold text-white d-flex align-items-center gap-2" style={{ fontSize: '1rem' }}>
+                    <i className="bi bi-plus-circle"></i>
+                    Registrar Nuevo Producto
+                </Modal.Title>
             </Modal.Header>
 
             <Modal.Body>
@@ -106,7 +116,20 @@ const ModalRegistroProducto = ({
                     </Row>
 
                     <Row>
-                        
+                        <Col md={6}>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Stock Inicial *</Form.Label>
+                                <Form.Control
+                                    type="number"
+                                    min="0"
+                                    name="stock"
+                                    value={nuevoProducto.stock ?? ''}
+                                    onChange={manejoCambioInput}
+                                    placeholder="Ej: 50"
+                                />
+                                <Form.Text className="text-muted small">Unidades disponibles para venta.</Form.Text>
+                            </Form.Group>
+                        </Col>
                         <Col md={6}>
                             <Form.Group className="mb-3">
                                 <Form.Label>Seleccionar Imágenes (varias)</Form.Label>

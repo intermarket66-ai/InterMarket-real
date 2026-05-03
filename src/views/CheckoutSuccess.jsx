@@ -64,8 +64,23 @@ const CheckoutSuccess = () => {
                 // Limpiar todo después del éxito
                 localStorage.removeItem('carritoPendiente');
                 localStorage.removeItem('totalPendiente');
-                localStorage.removeItem('carrito'); // Vaciar el carrito real
+                localStorage.removeItem('carrito');
                 window.dispatchEvent(new Event('carritoActualizado'));
+
+                // Reducir stock de cada producto
+                for (const item of carrito) {
+                    const { data: prod } = await supabase
+                        .from('productos')
+                        .select('stock')
+                        .eq('id_producto', item.id_producto)
+                        .single();
+                    if (prod && prod.stock !== null) {
+                        await supabase
+                            .from('productos')
+                            .update({ stock: Math.max(0, prod.stock - (item.cantidad || 1)) })
+                            .eq('id_producto', item.id_producto);
+                    }
+                }
                 
             } catch (err) {
                 console.error("Error al confirmar la venta:", err);

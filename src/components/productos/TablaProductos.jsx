@@ -36,6 +36,7 @@ const TablaProductos = ({
                     <th>Categoría</th>
                     <th className="text-end">Precio Compra</th>
                     <th className="text-end">Precio Venta</th>
+                    <th className="text-center">Stock</th>
                     <th className="text-center">Oferta</th>
                     <th className="text-center">Acciones</th>
                 </tr>
@@ -68,11 +69,29 @@ const TablaProductos = ({
                         </td>
                         
                         <td className="text-end">
-                            ${parseFloat(producto.precio_compra || 0).toFixed(2)}
+                            C${parseFloat(producto.precio_compra || 0).toFixed(2)}
                         </td>
                         
                         <td className="text-end fw-bold text-success">
-                            ${parseFloat(producto.precio_venta || 0).toFixed(2)}
+                            C${parseFloat(producto.precio_venta || 0).toFixed(2)}
+                        </td>
+
+                        <td className="text-center">
+                            {producto.stock === null || producto.stock === undefined ? (
+                                <span className="text-muted small">—</span>
+                            ) : producto.stock === 0 ? (
+                                <Badge bg="danger" className="rounded-pill px-2">
+                                    <i className="bi bi-x-circle me-1"></i>Agotado
+                                </Badge>
+                            ) : producto.stock <= 5 ? (
+                                <Badge bg="warning" text="dark" className="rounded-pill px-2">
+                                    <i className="bi bi-exclamation-triangle me-1"></i>{producto.stock}
+                                </Badge>
+                            ) : (
+                                <Badge bg="success" className="rounded-pill px-2">
+                                    <i className="bi bi-check-circle me-1"></i>{producto.stock}
+                                </Badge>
+                            )}
                         </td>
 
                         <td className="text-center">

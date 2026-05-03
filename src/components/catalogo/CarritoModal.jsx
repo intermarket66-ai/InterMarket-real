@@ -39,9 +39,12 @@ const CarritoModal = ({ mostrar, setMostrar, carrito, setCarrito, total, onCompr
         }
     };
 
-    const actualizarCantidad = (id_producto, nuevaCantidad) => {
+    const actualizarCantidad = (id_producto, nuevaCantidad, stockDisponible) => {
         if (nuevaCantidad < 1) return;
-        
+        if (stockDisponible !== undefined && nuevaCantidad > stockDisponible) {
+            alert(`Solo hay ${stockDisponible} unidades disponibles.`);
+            return;
+        }
         const nuevoCarrito = carrito.map(item =>
             item.id_producto === id_producto 
                 ? { ...item, cantidad: nuevaCantidad }
@@ -158,7 +161,22 @@ const CarritoModal = ({ mostrar, setMostrar, carrito, setCarrito, total, onCompr
 
             const data = await response.json();
             if (data.success) {
-                alert("¡Pago Simulado Exitosamente! La venta ha sido registrada.");
+                // Reducir stock de cada producto comprado
+                for (const item of carrito) {
+                    const { data: prod } = await supabase
+                        .from('productos')
+                        .select('stock')
+                        .eq('id_producto', item.id_producto)
+                        .single();
+                    if (prod && prod.stock !== null) {
+                        const nuevoStock = Math.max(0, prod.stock - (item.cantidad || 1));
+                        await supabase
+                            .from('productos')
+                            .update({ stock: nuevoStock })
+                            .eq('id_producto', item.id_producto);
+                    }
+                }
+                alert('¡Pago Simulado Exitosamente! La venta ha sido registrada.');
                 setCarrito([]);
                 localStorage.removeItem('carrito');
                 window.dispatchEvent(new Event('carritoActualizado'));
@@ -202,15 +220,21 @@ const CarritoModal = ({ mostrar, setMostrar, carrito, setCarrito, total, onCompr
                                 <Col xs={5}>
                                     <strong>{item.nombre_producto}</strong>
                                     <div className="text-muted small">
-                                        ${parseFloat(item.precio_venta).toFixed(2)} c/u
+                                        C${parseFloat(item.precio_venta).toFixed(2)} c/u
                                     </div>
+                                    {item.stock !== undefined && item.stock !== null && (
+                                        <div className={`small mt-1 fw-bold ${item.stock <= 3 ? 'text-danger' : 'text-success'}`}>
+                                            <i className="bi bi-box-seam me-1"></i>
+                                            {item.stock === 0 ? 'Sin stock' : `${item.stock} disponibles`}
+                                        </div>
+                                    )}
                                 </Col>
                                 <Col xs={4} className="text-end">
                                     <div className="d-flex align-items-center justify-content-end gap-2">
                                         <Button 
                                             variant="outline-secondary" 
                                             size="sm"
-                                            onClick={() => actualizarCantidad(item.id_producto, item.cantidad - 1)}
+                                            onClick={() => actualizarCantidad(item.id_producto, item.cantidad - 1, item.stock)}
                                         >
                                             -
                                         </Button>
@@ -218,7 +242,8 @@ const CarritoModal = ({ mostrar, setMostrar, carrito, setCarrito, total, onCompr
                                         <Button 
                                             variant="outline-secondary" 
                                             size="sm"
-                                            onClick={() => actualizarCantidad(item.id_producto, item.cantidad + 1)}
+                                            onClick={() => actualizarCantidad(item.id_producto, item.cantidad + 1, item.stock)}
+                                            disabled={item.stock !== undefined && item.stock !== null && item.cantidad >= item.stock}
                                         >
                                             +
                                         </Button>
