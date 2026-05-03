@@ -59,20 +59,6 @@ const CheckoutSuccess = () => {
                     throw new Error(errorData.error || 'Error al procesar la orden final');
                 }
 
-                // Intentar guardar el método de pago si es posible
-                try {
-                    await fetch('/.netlify/functions/save-payment-method', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            Authorization: `Bearer ${session.access_token}`,
-                        },
-                        body: JSON.stringify({ session_id: sessionId }),
-                    });
-                } catch (err) {
-                    console.warn('No se pudo guardar el método de pago Stripe:', err);
-                }
-
                 // Limpiar todo después del éxito
                 localStorage.removeItem('carritoPendiente');
                 localStorage.removeItem('totalPendiente');

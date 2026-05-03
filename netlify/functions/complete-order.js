@@ -48,8 +48,11 @@ export const handler = async (event) => {
 
         const userId = authUserData.user.id;
 
-        // 2. Verificar la sesión en Stripe
-        const session = await stripe.checkout.sessions.retrieve(session_id);
+        // 2. Verificar la sesión en Stripe (Expandir para obtener el método de pago)
+        const session = await stripe.checkout.sessions.retrieve(session_id, {
+            expand: ['payment_intent.payment_method'],
+        });
+        
         if (!session || session.payment_status !== 'paid') {
             return {
                 statusCode: 400,
@@ -149,6 +152,36 @@ export const handler = async (event) => {
                     mensaje: `${nombreComprador} ha comprado productos de tu tienda. Pago confirmado vía Stripe.`
                 }]);
             }
+        }
+
+        // 8. Guardar el Método de Pago (Si es nuevo y no es simulado)
+        try {
+            const paymentIntent = session.payment_intent;
+            const paymentMethod = paymentIntent?.payment_method;
+
+            if (paymentMethod && paymentMethod.id) {
+                // Verificar si ya existe para este usuario
+                const { data: existingMethod } = await supabase
+                    .from('metodos_pago')
+                    .select('id_metodo_pago')
+                    .eq('id_usuario', userId)
+                    .eq('id_stripe_payment_method', paymentMethod.id)
+                    .maybeSingle();
+
+                if (!existingMethod) {
+                    const cardDetails = paymentMethod.card || {};
+                    await supabase.from('metodos_pago').insert({
+                        id_usuario: userId,
+                        id_stripe_customer: session.customer,
+                        id_stripe_payment_method: paymentMethod.id,
+                        ultimo4: cardDetails.last4 || null,
+                        tipo_metodo: paymentMethod.type || 'card',
+                    });
+                    console.log(`[MetodoPago] Guardado con éxito: ${paymentMethod.id}`);
+                }
+            }
+        } catch (err) {
+            console.warn('Error no crítico al guardar método de pago:', err.message);
         }
 
         return {

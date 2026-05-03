@@ -137,6 +137,19 @@ export const handler = async (event) => {
             }
         }
 
+        // 8. Guardar Método de Pago Simulado
+        try {
+            await supabase.from('metodos_pago').insert({
+                id_usuario: userId,
+                id_stripe_customer: 'cus_simulado',
+                id_stripe_payment_method: 'pm_simulado_' + id_operacion,
+                ultimo4: '0000',
+                tipo_metodo: 'visa_simulada',
+            });
+        } catch (err) {
+            console.warn('Error al guardar método simulado:', err.message);
+        }
+
         return {
             statusCode: 200,
             headers,
