@@ -4,6 +4,7 @@ import { supabase } from '../../database/supabaseconfig';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { enviarNotificacionPorCorreo } from '../../services/emailService';
+import { notificarStockBajo } from '../../services/notificacionService';
 
 const CarritoModal = ({ mostrar, setMostrar, carrito, setCarrito, total, onCompraExitosa }) => {
     const { user, session } = useAuth();
@@ -165,7 +166,7 @@ const CarritoModal = ({ mostrar, setMostrar, carrito, setCarrito, total, onCompr
                 for (const item of carrito) {
                     const { data: prod } = await supabase
                         .from('productos')
-                        .select('stock')
+                        .select('stock, nombre_producto')
                         .eq('id_producto', item.id_producto)
                         .single();
                     if (prod && prod.stock !== null) {
@@ -174,6 +175,8 @@ const CarritoModal = ({ mostrar, setMostrar, carrito, setCarrito, total, onCompr
                             .from('productos')
                             .update({ stock: nuevoStock })
                             .eq('id_producto', item.id_producto);
+                        // Notificar al vendedor si el stock queda bajo
+                        await notificarStockBajo(item.id_producto, prod.nombre_producto, nuevoStock);
                     }
                 }
                 alert('¡Pago Simulado Exitosamente! La venta ha sido registrada.');
