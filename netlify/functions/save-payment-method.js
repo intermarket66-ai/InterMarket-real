@@ -45,12 +45,22 @@ export const handler = async (event) => {
       };
     }
 
-    // Ignorar si es un pago simulado (no hay tarjeta real en Stripe)
+    // Manejo de pago simulado
     if (session_id.startsWith('simulado_')) {
+      const { error: mockError } = await supabase.from('metodos_pago').insert({
+        id_usuario: userId,
+        id_stripe_customer: 'cus_simulado',
+        id_stripe_payment_method: 'pm_simulado_' + Date.now(),
+        ultimo4: '0000',
+        tipo_metodo: 'visa_simulada',
+      });
+
+      if (mockError) throw mockError;
+
       return {
         statusCode: 200,
         headers,
-        body: JSON.stringify({ success: true, message: 'Pago simulado: No se requiere guardar tarjeta.' }),
+        body: JSON.stringify({ success: true, message: 'Pago simulado guardado.' }),
       };
     }
 
