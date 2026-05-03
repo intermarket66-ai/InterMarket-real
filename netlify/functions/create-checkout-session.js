@@ -97,7 +97,9 @@ export const handler = async (event, context) => {
             .maybeSingle();
 
         let stripeCustomerId = currentMethod?.id_stripe_customer || null;
-        if (!stripeCustomerId) {
+        
+        // Si el ID es manual o simulado, debemos crear uno real en Stripe para que el checkout funcione
+        if (!stripeCustomerId || stripeCustomerId === 'cus_manual') {
             stripeCustomerId = await getStripeCustomerId(email, userId);
         }
 
