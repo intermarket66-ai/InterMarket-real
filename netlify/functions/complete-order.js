@@ -142,30 +142,6 @@ export const handler = async (event) => {
         const { error: pedidosError } = await supabase.from('pedidos').insert(pedidos);
         if (pedidosError) throw pedidosError;
 
-        // --- NUEVO: Reducir stock de los productos ---
-        for (const item of carrito) {
-            try {
-                const { data: prod } = await supabase
-                    .from('productos')
-                    .select('stock')
-                    .eq('id_producto', item.id_producto)
-                    .single();
-                
-                if (prod && prod.stock !== null) {
-                    const cantidadComprada = item.cantidad || 1;
-                    const nuevoStock = Math.max(0, prod.stock - cantidadComprada);
-                    
-                    await supabase
-                        .from('productos')
-                        .update({ stock: nuevoStock })
-                        .eq('id_producto', item.id_producto);
-                }
-            } catch (errStock) {
-                console.error("Error reduciendo stock para producto:", item.id_producto, errStock);
-                // No lanzamos error para no cancelar la venta si falla solo el stock
-            }
-        }
-
         // 7. Notificaciones a los vendedores
         const tiendasIds = [...new Set(carrito.map(item => item.id_tienda).filter(Boolean))];
         for (const idTienda of tiendasIds) {

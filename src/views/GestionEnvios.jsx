@@ -80,7 +80,26 @@ const GestionEnvios = () => {
             // 1. Obtener los datos del pedido antes de actualizar
             const pedido = pedidos.find(p => p.id_pedido === idPedido);
             
-            // 2. Actualizar el estado del pedido
+            // 2. Si el estado pasa a 2 (Aceptado) y antes era 1 (Pendiente), reducimos stock
+            if (nuevoEstado === 2 && pedido && pedido.id_estado === 1) {
+                const { data: producto } = await supabase
+                    .from('productos')
+                    .select('stock')
+                    .eq('id_producto', pedido.id_producto)
+                    .single();
+
+                if (producto && producto.stock !== null) {
+                    const cantidadComprada = pedido.cantidad || 1;
+                    const nuevoStock = Math.max(0, producto.stock - cantidadComprada);
+                    
+                    await supabase
+                        .from('productos')
+                        .update({ stock: nuevoStock })
+                        .eq('id_producto', pedido.id_producto);
+                }
+            }
+
+            // 3. Actualizar el estado del pedido
             const { error } = await supabase
                 .from('pedidos')
                 .update({ id_estado: nuevoEstado })
@@ -88,7 +107,7 @@ const GestionEnvios = () => {
 
             if (error) throw error;
             
-            // 3. Notificar al usuario
+            // 4. Notificar al usuario
             if (pedido) {
                 const msj = nuevoEstado === 2 ? 'Tu pedido ha sido aceptado y está en preparación.' : 
                             nuevoEstado === 4 ? 'Tu pedido ha sido entregado.' : 'Tu pedido ha sido cancelado.';
