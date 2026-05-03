@@ -161,21 +161,6 @@ const CarritoModal = ({ mostrar, setMostrar, carrito, setCarrito, total, onCompr
 
             const data = await response.json();
             if (data.success) {
-                // Reducir stock de cada producto comprado
-                for (const item of carrito) {
-                    const { data: prod } = await supabase
-                        .from('productos')
-                        .select('stock')
-                        .eq('id_producto', item.id_producto)
-                        .single();
-                    if (prod && prod.stock !== null) {
-                        const nuevoStock = Math.max(0, prod.stock - (item.cantidad || 1));
-                        await supabase
-                            .from('productos')
-                            .update({ stock: nuevoStock })
-                            .eq('id_producto', item.id_producto);
-                    }
-                }
                 alert('¡Pago Simulado Exitosamente! La venta ha sido registrada.');
                 setCarrito([]);
                 localStorage.removeItem('carrito');
