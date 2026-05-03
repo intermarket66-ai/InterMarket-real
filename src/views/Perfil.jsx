@@ -17,6 +17,10 @@ const Perfil = () => {
   const [archivoNuevo, setArchivoNuevo] = useState(null);
   const [mensaje, setMensaje] = useState({ texto: "", tipo: "" });
   
+  // Detalle de envío
+  const [showShipmentModal, setShowShipmentModal] = useState(false);
+  const [pedidoDetalle, setPedidoDetalle] = useState(null);
+  
   // Estados para añadir tarjeta
   const [showAddModal, setShowAddModal] = useState(false);
   const [nuevaTarjeta, setNuevaTarjeta] = useState({ tipo: "Visa", ultimo4: "" });
@@ -87,7 +91,8 @@ const Perfil = () => {
             creado_en, 
             precio_unitario, 
             id_estado, 
-            productos(nombre_producto, imagen_url)
+            productos(nombre_producto, imagen_url),
+            ventas(id_direccion, direcciones(*))
           `)
           .eq("perfil_id", perfilData.perfil_id)
           .order("creado_en", { ascending: false });
@@ -534,10 +539,18 @@ const Perfil = () => {
                                 <span className="text-muted">Fecha:</span>
                                 <strong>{new Date(pedido.creado_en).toLocaleDateString()}</strong>
                               </div>
-                              <div className="d-flex justify-content-between">
+                              <div className="d-flex justify-content-between align-items-center">
                                 <span className="text-muted">Precio:</span>
-                                <strong className="text-success">${Number(pedido.precio_unitario).toFixed(2)}</strong>
+                                <strong className="text-success">C${Number(pedido.precio_unitario).toFixed(2)}</strong>
                               </div>
+                              <Button 
+                                variant="primary" 
+                                size="sm" 
+                                className="w-100 mt-3 rounded-pill"
+                                onClick={() => { setPedidoDetalle(pedido); setShowShipmentModal(true); }}
+                              >
+                                <i className="bi bi-truck me-2"></i> Ver Detalle de Envío
+                              </Button>
                             </Card.Body>
                           </Card>
                         </Col>
@@ -581,6 +594,15 @@ const Perfil = () => {
                                 {getEstadoTexto(pedido.id_estado)}
                               </Badge>
                             </td>
+                            <td>
+                              <Button 
+                                variant="outline-primary" 
+                                size="sm" 
+                                onClick={() => { setPedidoDetalle(pedido); setShowShipmentModal(true); }}
+                              >
+                                <i className="bi bi-truck me-1"></i> Detalle
+                              </Button>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -592,6 +614,101 @@ const Perfil = () => {
           </Card>
         </Tab>
       </Tabs>
+
+      {/* MODAL DETALLE DE ENVÍO PARA COMPRADOR */}
+      {showShipmentModal && pedidoDetalle && (
+        <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered modal-lg">
+            <div className="modal-content border-0 shadow-lg rounded-4">
+              <div className="modal-header border-0 bg-primary text-white p-4">
+                <h5 className="modal-title fw-bold">
+                    <i className="bi bi-truck me-2"></i>
+                    Detalle del Envío #{pedidoDetalle.id_pedido.slice(0,8)}
+                </h5>
+                <button type="button" className="btn-close btn-close-white" onClick={() => setShowShipmentModal(false)}></button>
+              </div>
+              <div className="modal-body p-4">
+                <Row className="g-4">
+                  <Col md={6}>
+                    <div className="mb-4">
+                      <h6 className="text-muted fw-bold text-uppercase small mb-3">Producto</h6>
+                      <div className="d-flex align-items-center p-3 bg-light rounded-4">
+                        {pedidoDetalle.productos?.imagen_url?.[0] && (
+                          <img 
+                            src={pedidoDetalle.productos.imagen_url[0]} 
+                            alt="" 
+                            style={{width: '70px', height: '70px', objectFit: 'cover'}} 
+                            className="rounded-3 shadow-sm me-3"
+                          />
+                        )}
+                        <div>
+                          <div className="fw-bold">{pedidoDetalle.productos?.nombre_producto}</div>
+                          <div className="text-success fw-bold">C${Number(pedidoDetalle.precio_unitario).toFixed(2)}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h6 className="text-muted fw-bold text-uppercase small mb-3">Estado del Envío</h6>
+                      <div className={`p-3 rounded-4 bg-${getBadgeColor(pedidoDetalle.id_estado)} bg-opacity-10 text-${getBadgeColor(pedidoDetalle.id_estado)} border border-${getBadgeColor(pedidoDetalle.id_estado)} border-opacity-25`}>
+                         <div className="d-flex align-items-center">
+                           <i className={`bi bi-${pedidoDetalle.id_estado === 4 ? 'check-circle' : 'clock'} fs-4 me-3`}></i>
+                           <div>
+                             <div className="fw-bold">{getEstadoTexto(pedidoDetalle.id_estado)}</div>
+                             <small className="opacity-75">Actualizado el {new Date().toLocaleDateString()}</small>
+                           </div>
+                         </div>
+                      </div>
+                    </div>
+                  </Col>
+
+                  <Col md={6}>
+                    <h6 className="text-muted fw-bold text-uppercase small mb-3">Dirección de Entrega</h6>
+                    {pedidoDetalle.ventas?.direcciones ? (
+                      <div className="p-4 border rounded-4 shadow-sm bg-white h-100">
+                        <div className="d-flex align-items-center mb-3">
+                          <div className="bg-primary bg-opacity-10 p-2 rounded-circle me-3">
+                            <i className="bi bi-geo-alt text-primary"></i>
+                          </div>
+                          <div>
+                            <div className="fw-bold">{pedidoDetalle.ventas.direcciones.nombre} {pedidoDetalle.ventas.direcciones.apellido}</div>
+                            <div className="text-muted small">{pedidoDetalle.ventas.direcciones.numero_telefono}</div>
+                          </div>
+                        </div>
+                        
+                        <div className="ps-5">
+                          <p className="mb-2 text-dark">{pedidoDetalle.ventas.direcciones.nombre_calle}</p>
+                          {pedidoDetalle.ventas.direcciones.codigo_postal && (
+                             <p className="mb-2"><Badge bg="light" text="dark" className="border">CP: {pedidoDetalle.ventas.direcciones.codigo_postal}</Badge></p>
+                          )}
+                          {pedidoDetalle.ventas.direcciones.descripcion && (
+                            <div className="mt-3 pt-3 border-top">
+                              <small className="text-muted d-block mb-1 italic">Referencias:</small>
+                              <div className="small text-secondary px-2 border-start border-3">
+                                {pedidoDetalle.ventas.direcciones.descripcion}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <Alert variant="warning">
+                        No se encontró información de dirección para este pedido.
+                      </Alert>
+                    )}
+                  </Col>
+                </Row>
+              </div>
+              <div className="modal-footer border-0 p-4">
+                <Button variant="secondary" className="rounded-pill px-4" onClick={() => setShowShipmentModal(false)}>Cerrar</Button>
+                <Button variant="primary" className="rounded-pill px-4" onClick={() => window.print()}>
+                  <i className="bi bi-printer me-2"></i>Imprimir Recibo
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {/* MODAL PARA AÑADIR TARJETA */}
       {showAddModal && (
         <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>

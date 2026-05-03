@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Button, Col, Container, Form, Row, Spinner } from "react-bootstrap";
+import { Button, Col, Container, Form, Row, Spinner, Badge } from "react-bootstrap";
 import { supabase } from "../database/supabaseconfig";
 import NotificacionOperacion from "../components/NotificacionOperacion";
 import { useAuth } from "../context/AuthContext";
@@ -45,7 +45,7 @@ const Mensajes = () => {
 
             const { data, error } = await supabase
                 .from("chats")
-                .select("*, productos(nombre_producto, imagen_url)")
+                .select("*, productos(nombre_producto, imagen_url), mensajes(leido, emisor_id)")
                 .or(`comprador_id.eq.${miPerfilId},vendedor_id.eq.${miPerfilId}`)
                 .order("creado_en", { ascending: false });
 
@@ -110,7 +110,18 @@ const Mensajes = () => {
                 .eq("id_chat", chatActivo.id_chat)
                 .order("creado_en", { ascending: true });
             
-            if (data) setMensajes(data);
+            if (data) {
+                setMensajes(data);
+                // Marcar como leídos los mensajes que no son míos
+                const mensajesNoLeidos = data.filter(m => m.emisor_id !== miPerfilId && !m.leido);
+                if (mensajesNoLeidos.length > 0) {
+                    await supabase
+                        .from("mensajes")
+                        .update({ leido: true })
+                        .eq("id_chat", chatActivo.id_chat)
+                        .neq("emisor_id", miPerfilId);
+                }
+            }
         };
 
         cargarMensajes();
@@ -118,9 +129,21 @@ const Mensajes = () => {
         const channel = supabase.channel(`mensajes_chat_${chatActivo.id_chat}`)
             .on(
                 'postgres_changes',
-                { event: 'INSERT', schema: 'public', table: 'mensajes', filter: `id_chat=eq.${chatActivo.id_chat}` },
-                (payload) => {
-                    setMensajes((prev) => [...prev, payload.new]);
+                { event: '*', schema: 'public', table: 'mensajes', filter: `id_chat=eq.${chatActivo.id_chat}` },
+                async (payload) => {
+                    if (payload.eventType === 'INSERT') {
+                        setMensajes((prev) => [...prev, payload.new]);
+                        
+                        // Si el mensaje es del otro, marcarlo como leído automáticamente si el chat está abierto
+                        if (payload.new.emisor_id !== miPerfilId) {
+                            await supabase
+                                .from("mensajes")
+                                .update({ leido: true })
+                                .eq("id_mensaje", payload.new.id_mensaje);
+                        }
+                    } else if (payload.eventType === 'UPDATE') {
+                        setMensajes((prev) => prev.map(m => m.id_mensaje === payload.new.id_mensaje ? payload.new : m));
+                    }
                 }
             )
             .subscribe();
@@ -207,9 +230,16 @@ const Mensajes = () => {
                                                 <strong className="text-truncate" style={{ maxWidth: '140px' }}>
                                                     {chat.productos?.nombre_producto || "Chat de Producto"}
                                                 </strong>
-                                                <small className="text-muted" style={{ fontSize: '0.65rem' }}>
-                                                    {new Date(chat.creado_en).toLocaleDateString()}
-                                                </small>
+                                                <div className="d-flex flex-column align-items-end">
+                                                    <small className="text-muted" style={{ fontSize: '0.65rem' }}>
+                                                        {new Date(chat.creado_en).toLocaleDateString()}
+                                                    </small>
+                                                    {chat.mensajes?.filter(m => !m.leido && m.emisor_id !== miPerfilId).length > 0 && (
+                                                        <Badge bg="primary" pill className="mt-1" style={{ fontSize: '0.6rem' }}>
+                                                            {chat.mensajes.filter(m => !m.leido && m.emisor_id !== miPerfilId).length}
+                                                        </Badge>
+                                                    )}
+                                                </div>
                                             </div>
                                             <div className="d-flex justify-content-between align-items-center">
                                                 <small className="text-muted text-truncate" style={{ fontSize: '0.75rem' }}>
@@ -262,7 +292,12 @@ const Mensajes = () => {
                                             >
                                                 <div className="burbuja-mensaje">
                                                     <p>{mensaje.texto}</p>
-                                                    <small>{new Date(mensaje.creado_en).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small>
+                                                    <div className="d-flex align-items-center justify-content-end gap-1">
+                                                        <small>{new Date(mensaje.creado_en).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small>
+                                                        {esMio && (
+                                                            <i className={`bi bi-check2${mensaje.leido ? '-all text-primary' : ''}`} style={{ fontSize: '0.8rem' }} />
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         );

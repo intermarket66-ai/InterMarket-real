@@ -18,6 +18,7 @@ import Perfil from "./views/Perfil";
 import Mensajes from "./views/Mensajes";
 import CheckoutSuccess from "./views/CheckoutSuccess";
 import CheckoutCancel from "./views/CheckoutCancel";
+import GestionEnvios from "./views/GestionEnvios";
 
 import "./App.css"
 
@@ -67,6 +68,7 @@ const AppLayout = () => {
           <Route path="/productos" element={<RutaProtegida rolesPermitidos={['vendedor']}><Productos /></RutaProtegida>} />
           <Route path="/tiendas" element={<RutaProtegida rolesPermitidos={['vendedor']}><Tiendas /></RutaProtegida>} />
           <Route path="/vendedor" element={<RutaProtegida rolesPermitidos={['vendedor']}><Vendedor /></RutaProtegida>} />
+          <Route path="/envios" element={<RutaProtegida rolesPermitidos={['vendedor']}><GestionEnvios /></RutaProtegida>} />
           
           {/* Rutas de Administrador */}
           <Route path="/admin-inicio" element={<RutaProtegida><AdminInicio /></RutaProtegida>} />

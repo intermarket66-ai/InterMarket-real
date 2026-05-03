@@ -222,6 +222,7 @@ const Encabezado = () => {
                     <>
                       <Nav.Link onClick={() => manejarNavegacion("/productos")} className={location.pathname === "/productos" ? "active fw-bold" : ""}>Productos</Nav.Link>
                       <Nav.Link onClick={() => manejarNavegacion("/tiendas")} className={location.pathname === "/tiendas" ? "active fw-bold" : ""}>Tienda</Nav.Link>
+                      <Nav.Link onClick={() => manejarNavegacion("/envios")} className={location.pathname === "/envios" ? "active fw-bold" : ""}>Envíos</Nav.Link>
                     </>
                   )}
                   {role === 'comprador' && (
@@ -272,6 +273,7 @@ const Encabezado = () => {
                     <>
                       <MobileNavLink ruta="/productos" icono="box-seam" texto="Mis Productos" />
                       <MobileNavLink ruta="/tiendas" icono="shop" texto="Mi Tienda" />
+                      <MobileNavLink ruta="/envios" icono="truck" texto="Envíos" />
                       <MobileNavLink ruta="/vendedor" icono="graph-up-arrow" texto="Panel de Ventas" />
                     </>
                   )}
