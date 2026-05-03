@@ -67,6 +67,33 @@ const Encabezado = () => {
     await supabase.from('notificaciones').update({ leido: true }).in('id_notificacion', noLeidasIds);
   };
 
+  const borrarNotificacion = async (id, e) => {
+    e.stopPropagation(); // Evitar que el dropdown se cierre o marque como leído
+    try {
+      const { error } = await supabase.from('notificaciones').delete().eq('id_notificacion', id);
+      if (error) throw error;
+      setNotificaciones(prev => prev.filter(n => n.id_notificacion !== id));
+      setNoLeidas(prev => notificaciones.find(n => n.id_notificacion === id)?.leido ? prev : Math.max(0, prev - 1));
+    } catch (err) {
+      console.error("Error al borrar notificación:", err);
+    }
+  };
+
+  const vaciarNotificaciones = async () => {
+    if (notificaciones.length === 0) return;
+    if (!window.confirm("¿Estás seguro de que deseas borrar todas las notificaciones?")) return;
+    
+    try {
+      const ids = notificaciones.map(n => n.id_notificacion);
+      const { error } = await supabase.from('notificaciones').delete().in('id_notificacion', ids);
+      if (error) throw error;
+      setNotificaciones([]);
+      setNoLeidas(0);
+    } catch (err) {
+      console.error("Error al vaciar notificaciones:", err);
+    }
+  };
+
   const manejarToggle = () => setMostrarMenu(!mostrarMenu);
 
   const manejarNavegacion = (ruta) => {
@@ -132,18 +159,33 @@ const Encabezado = () => {
                 )}
               </Dropdown.Toggle>
               <Dropdown.Menu className="shadow-lg border-0 rounded-lg mt-2 notification-dropdown" style={{ maxHeight: '480px', overflowY: 'auto' }}>
-                <div className="p-3 border-bottom d-flex justify-content-between align-items-center bg-light sticky-top">
-                  <h6 className="mb-0 fw-bold">Notificaciones</h6>
+                <div className="p-2 border-bottom d-flex justify-content-between align-items-center bg-light sticky-top">
+                  <span className="mb-0 fw-bold small ms-2">Notificaciones</span>
+                  {notificaciones.length > 0 && (
+                    <button 
+                      className="btn btn-link btn-sm text-danger text-decoration-none small"
+                      onClick={vaciarNotificaciones}
+                      style={{ fontSize: '0.75rem' }}
+                    >
+                      Limpiar todo
+                    </button>
+                  )}
                 </div>
                 {notificaciones.length === 0 ? (
                   <div className="p-4 text-center text-muted">No hay notificaciones</div>
                 ) : (
                   notificaciones.map(noti => (
-                    <Dropdown.Item key={noti.id_notificacion} className={`p-3 border-bottom text-wrap ${!noti.leido ? 'bg-light' : ''}`}>
-                      <div className="d-flex justify-content-between mb-1">
-                        <span className={`fw-bold small ${!noti.leido ? 'text-primary' : ''}`}>{noti.titulo}</span>
+                    <Dropdown.Item key={noti.id_notificacion} className={`p-3 border-bottom text-wrap position-relative notification-item ${!noti.leido ? 'bg-light' : ''}`}>
+                      <div className="d-flex justify-content-between align-items-start mb-1">
+                        <span className={`fw-bold small pe-4 ${!noti.leido ? 'text-primary' : ''}`}>{noti.titulo}</span>
+                        <button 
+                          className="btn-close-small position-absolute top-0 end-0 m-2"
+                          onClick={(e) => borrarNotificacion(noti.id_notificacion, e)}
+                        >
+                          <i className="bi bi-x text-muted"></i>
+                        </button>
                       </div>
-                      <p className="mb-0 small text-secondary">{noti.mensaje}</p>
+                      <p className="mb-0 small text-secondary" style={{ fontSize: '0.8rem' }}>{noti.mensaje}</p>
                     </Dropdown.Item>
                   ))
                 )}

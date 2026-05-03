@@ -251,3 +251,38 @@ body {
         display: none !important;
     }
 }
+
+/* --- NOTIFICACIONES --- */
+.notification-dropdown {
+    width: 320px;
+}
+
+.notification-item {
+    transition: background-color 0.2s ease;
+}
+
+.notification-item:hover {
+    background-color: #f8fafc !important;
+}
+
+.btn-close-small {
+    background: transparent;
+    border: none;
+    padding: 2px 6px;
+    border-radius: 6px;
+    line-height: 1;
+    transition: all 0.2s ease;
+    opacity: 0;
+}
+
+.notification-item:hover .btn-close-small {
+    opacity: 1;
+}
+
+.btn-close-small:hover {
+    background: #fee2e2;
+}
+
+.btn-close-small i {
+    font-size: 1.1rem;
+}
