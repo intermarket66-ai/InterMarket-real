@@ -2,12 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { Modal, Button, Row, Col, Badge, Form, Spinner, Card, Carousel } from 'react-bootstrap';
 import { supabase } from '../../database/supabaseconfig';
 import { useAuth } from '../../context/AuthContext';
+import ModalTienda from './ModalTienda';
 
 const ModalDetalleProducto = ({ mostrar, setMostrar, producto, agregarAlCarrito }) => {
     const { user } = useAuth();
     const [tienda, setTienda] = useState(null);
     const [vendedor, setVendedor] = useState(null);
     const [perfilUsuario, setPerfilUsuario] = useState(null);
+    const [mostrarModalTienda, setMostrarModalTienda] = useState(false);
+    const [esMiProducto, setEsMiProducto] = useState(false);
     
     const [resenas, setResenas] = useState([]);
     const [calificacionesTienda, setCalificacionesTienda] = useState([]);
@@ -69,10 +72,17 @@ const ModalDetalleProducto = ({ mostrar, setMostrar, producto, agregarAlCarrito 
                 // Obtener perfil del usuario actual
                 const { data: miPerfil } = await supabase
                     .from('perfiles')
-                    .select('perfil_id')
+                    .select('perfil_id, id_tienda')
                     .eq('id_usuario', user.id)
                     .single();
                 setPerfilUsuario(miPerfil);
+
+                // Verificar si el producto es de su propia tienda
+                if (miPerfil && miPerfil.id_tienda === producto.id_tienda) {
+                    setEsMiProducto(true);
+                } else {
+                    setEsMiProducto(false);
+                }
 
                 if (miPerfil) {
                     const { data: pedidos } = await supabase
@@ -217,18 +227,29 @@ const ModalDetalleProducto = ({ mostrar, setMostrar, producto, agregarAlCarrito 
                                 <Card className="border-0 shadow-sm mb-4">
                                     <Card.Body>
                                         <h6 className="fw-bold text-uppercase text-muted mb-2 small">Vendido por:</h6>
-                                        <div className="d-flex align-items-center mb-2">
+                                        <div
+                                            className="d-flex align-items-center mb-2 p-2 rounded-3 store-link-hover"
+                                            style={{ cursor: 'pointer', transition: 'background 0.2s' }}
+                                            onClick={() => setMostrarModalTienda(true)}
+                                            title="Ver tienda completa"
+                                        >
                                             {tienda.imagen_url ? (
-                                                <img src={tienda.imagen_url} alt="Logo" className="rounded-circle me-2" style={{ width: '40px', height: '40px', objectFit: 'cover' }} />
+                                                <img src={tienda.imagen_url} alt="Logo" className="rounded-circle me-2 shadow-sm" style={{ width: '44px', height: '44px', objectFit: 'cover' }} />
                                             ) : (
-                                                <div className="bg-primary text-white rounded-circle d-flex justify-content-center align-items-center me-2" style={{ width: '40px', height: '40px' }}>
+                                                <div className="bg-primary text-white rounded-circle d-flex justify-content-center align-items-center me-2 shadow-sm" style={{ width: '44px', height: '44px' }}>
                                                     <i className="bi bi-shop"></i>
                                                 </div>
                                             )}
-                                            <div>
-                                                <h6 className="mb-0 fw-bold">{tienda.nombre_tienda}</h6>
+                                            <div className="flex-grow-1">
+                                                <h6 className="mb-0 fw-bold text-primary d-flex align-items-center gap-1">
+                                                    {tienda.nombre_tienda}
+                                                    <i className="bi bi-chevron-right text-muted" style={{ fontSize: '0.75rem' }}></i>
+                                                </h6>
                                                 <small className="text-muted">{vendedor?.usuarios?.username || 'Vendedor'}</small>
                                             </div>
+                                            <span className="badge bg-primary bg-opacity-10 text-primary rounded-pill px-2" style={{ fontSize: '0.7rem' }}>
+                                                Ver tienda
+                                            </span>
                                         </div>
                                         <div className="mb-2">
                                             <small className="me-2">Reputación:</small>
@@ -281,18 +302,28 @@ const ModalDetalleProducto = ({ mostrar, setMostrar, producto, agregarAlCarrito 
 
                             <p className="text-secondary mb-4">{producto.descripcion || 'Sin descripción detallada.'}</p>
 
-                            <Button 
-                                variant="primary" 
-                                size="lg" 
-                                className="w-100 rounded-pill fw-bold shadow-sm mb-4"
-                                style={{ backgroundColor: 'var(--color-primario)', borderColor: 'var(--color-primario)' }}
-                                onClick={() => {
-                                    agregarAlCarrito(producto);
-                                    setMostrar(false);
-                                }}
-                            >
-                                <i className="bi bi-cart-plus me-2"></i> Añadir al Carrito
-                            </Button>
+                            {esMiProducto ? (
+                                <div className="alert alert-warning border-0 shadow-sm rounded-4 d-flex align-items-center mb-4">
+                                    <i className="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
+                                    <div>
+                                        <strong className="d-block">¡Aviso de Propietario!</strong>
+                                        Este producto pertenece a tu tienda. No puedes comprar tus propios productos.
+                                    </div>
+                                </div>
+                            ) : (
+                                <Button 
+                                    variant="primary" 
+                                    size="lg" 
+                                    className="w-100 rounded-pill fw-bold shadow-sm mb-4"
+                                    style={{ backgroundColor: 'var(--color-primario)', borderColor: 'var(--color-primario)' }}
+                                    onClick={() => {
+                                        agregarAlCarrito(producto);
+                                        setMostrar(false);
+                                    }}
+                                >
+                                    <i className="bi bi-cart-plus me-2"></i> Añadir al Carrito
+                                </Button>
+                            )}
 
                             <hr />
 
@@ -347,6 +378,20 @@ const ModalDetalleProducto = ({ mostrar, setMostrar, producto, agregarAlCarrito 
                 )}
             </Modal.Body>
         </Modal>
+
+        {/* Modal Tienda Completa */}
+        {tienda && (
+            <ModalTienda
+                mostrar={mostrarModalTienda}
+                onCerrar={() => setMostrarModalTienda(false)}
+                tiendaId={tienda.id_tienda}
+                onVerProducto={(p) => {
+                    setMostrarModalTienda(false);
+                    // Pasar el producto seleccionado al padre si se necesita
+                    agregarAlCarrito && setMostrar && (() => {})();
+                }}
+            />
+        )}
     );
 };
 

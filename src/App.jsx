@@ -26,8 +26,9 @@ import "./App.css"
 const AppLayout = () => {
   const location = useLocation();
   
-  // Normalizar path para la comparación (sin slash final y en minúsculas)
-  const currentPath = (location.pathname || "").toLowerCase().replace(/\/$/, "");
+  // Normalizar path con protección extra
+  const pathname = location?.pathname || "";
+  const currentPath = pathname.toLowerCase().replace(/\/$/, "");
   
   // No mostrar encabezado en estas rutas específicas
   const rutasSinNavbar = ["/login", "/registro", "/seleccion-rol"];

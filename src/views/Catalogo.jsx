@@ -20,6 +20,7 @@ function Catalogo() {
     const [mostrarModalPostCompra, setMostrarModalPostCompra] = useState(false);
     const [itemsCompradosRecientemente, setItemsCompradosRecientemente] = useState([]);
     const [productoSeleccionado, setProductoSeleccionado] = useState(null);
+    const [miTiendaId, setMiTiendaId] = useState(null);
 
     const abrirModalContacto = (producto) => {
         setProductoSeleccionado(producto);
@@ -47,10 +48,22 @@ function Catalogo() {
         };
 
         window.addEventListener("abrirCarrito", handleAbrirCarrito);
+        
+        const obtenerMiTienda = async () => {
+            if (!user) return;
+            const { data } = await supabase
+                .from('perfiles')
+                .select('id_tienda')
+                .eq('id_usuario', user.id)
+                .maybeSingle();
+            if (data?.id_tienda) setMiTiendaId(data.id_tienda);
+        };
+        obtenerMiTienda();
+
         return () => {
             window.removeEventListener("abrirCarrito", handleAbrirCarrito);
         };
-    }, []);
+    }, [user]);
 
     const cargarProductos = async () => {
         try {
@@ -258,12 +271,19 @@ function Catalogo() {
                                                     <i className="bi bi-chat-text"></i>
                                                 </Button>
                                                 <Button 
-                                                    variant="primary" 
+                                                    variant={producto.id_tienda === miTiendaId ? "outline-warning" : "primary"} 
                                                     className="w-100 fw-bold rounded-pill"
-                                                    onClick={() => agregarAlCarrito(producto)}
+                                                    onClick={() => {
+                                                        if (producto.id_tienda === miTiendaId) {
+                                                            alert("No puedes comprar tus propios productos.");
+                                                        } else {
+                                                            agregarAlCarrito(producto);
+                                                        }
+                                                    }}
+                                                    disabled={producto.id_tienda === miTiendaId}
                                                 >
-                                                    <i className="bi bi-plus-lg me-2"></i>
-                                                    Añadir
+                                                    <i className={`bi bi-${producto.id_tienda === miTiendaId ? 'shop' : 'plus-lg'} me-2`}></i>
+                                                    {producto.id_tienda === miTiendaId ? 'Es tuyo' : 'Añadir'}
                                                 </Button>
                                             </div>
                                         </div>

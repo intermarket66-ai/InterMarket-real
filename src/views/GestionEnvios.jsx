@@ -39,7 +39,7 @@ const GestionEnvios = () => {
                 .from('pedidos')
                 .select(`
                     *,
-                    productos(nombre_producto, imagen_url),
+                    productos!inner(nombre_producto, imagen_url, id_tienda),
                     perfiles(usuarios(username, email)),
                     ventas(id_direccion, direcciones(*))
                 `)
