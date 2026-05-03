@@ -106,19 +106,7 @@ const ModalRegistroProducto = ({
                     </Row>
 
                     <Row>
-                        <Col md={6}>
-                            <Form.Group className="mb-3">
-                                <Form.Label>Estado</Form.Label>
-                                <Form.Select
-                                    name="id_estado"
-                                    value={nuevoProducto.id_estado}
-                                    onChange={manejoCambioInput}
-                                >
-                                    <option value="1">Entregado</option>
-                                    <option value="2">Proceso</option>
-                                </Form.Select>
-                            </Form.Group>
-                        </Col>
+                        
                         <Col md={6}>
                             <Form.Group className="mb-3">
                                 <Form.Label>Seleccionar Imágenes (varias)</Form.Label>
