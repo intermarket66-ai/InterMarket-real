@@ -73,7 +73,7 @@ const Mensajes = () => {
         if (!textoBusqueda.trim()) return chats;
         const valor = textoBusqueda.toLowerCase().trim();
         return chats.filter((chat) =>
-            [chat.comprador_id, chat.vendedor_id, chat.producto_id]
+            [chat.comprador_id, chat.vendedor_id, chat.id_producto]
                 .filter(Boolean)
                 .some((campo) => campo.toLowerCase().includes(valor))
         );

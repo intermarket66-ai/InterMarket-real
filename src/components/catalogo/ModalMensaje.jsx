@@ -50,7 +50,7 @@ const ModalMensaje = ({ mostrar, setMostrar, producto }) => {
                 .select('id_chat')
                 .eq('comprador_id', compradorData.perfil_id)
                 .eq('vendedor_id', vendedorData.perfil_id)
-                .eq('producto_id', producto.id_producto)
+                .eq('id_producto', producto.id_producto)
                 .maybeSingle();
 
             if (chatExistente) {
@@ -61,7 +61,7 @@ const ModalMensaje = ({ mostrar, setMostrar, producto }) => {
                     .insert([{
                         comprador_id: compradorData.perfil_id,
                         vendedor_id: vendedorData.perfil_id,
-                        producto_id: producto.id_producto
+                        id_producto: producto.id_producto
                     }])
                     .select()
                     .single();

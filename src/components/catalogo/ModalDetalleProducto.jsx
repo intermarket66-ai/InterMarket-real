@@ -74,7 +74,7 @@ const ModalDetalleProducto = ({ mostrar, setMostrar, producto, agregarAlCarrito 
                         .from('pedidos')
                         .select('id_pedido')
                         .eq('perfil_id', miPerfil.perfil_id)
-                        .eq('producto_id', producto.id_producto)
+                        .eq('id_producto', producto.id_producto)
                         .gte('id_estado', 2);
                     setComprado(pedidos && pedidos.length > 0);
                 }

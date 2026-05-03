@@ -117,7 +117,7 @@ export const handler = async (event) => {
         const pedidos = carrito.map(item => ({
             perfil_id: perfilId,
             venta_id: venta.venta_id,
-            producto_id: item.id_producto,
+            id_producto: item.id_producto,
             id_estado: 1, // Pendiente
             precio_unitario: item.precio_venta
         }));
