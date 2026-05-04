@@ -140,6 +140,7 @@ export const handler = async (event) => {
             cantidad: item.cantidad || 1
         }));
 
+        console.log("Payload a insertar en pedidos:", JSON.stringify(pedidos, null, 2));
         const { error: pedidosError } = await supabase.from('pedidos').insert(pedidos);
         if (pedidosError) throw pedidosError;
 

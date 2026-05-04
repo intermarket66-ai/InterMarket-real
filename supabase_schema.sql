@@ -221,14 +221,14 @@ CREATE POLICY "Vendedores ven pedidos de sus productos" ON public.pedidos FOR SE
   EXISTS (
     SELECT 1 FROM public.productos pr
     JOIN public.perfiles pe ON pe.id_tienda = pr.id_tienda
-    WHERE pr.id_producto = pedidos.producto_id AND pe.id_usuario = auth.uid()
+    WHERE pr.id_producto = pedidos.id_producto AND pe.id_usuario = auth.uid()
   )
 );
 CREATE POLICY "Vendedores pueden actualizar estado de pedidos" ON public.pedidos FOR UPDATE USING (
   EXISTS (
     SELECT 1 FROM public.productos pr
     JOIN public.perfiles pe ON pe.id_tienda = pr.id_tienda
-    WHERE pr.id_producto = pedidos.producto_id AND pe.id_usuario = auth.uid()
+    WHERE pr.id_producto = pedidos.id_producto AND pe.id_usuario = auth.uid()
   )
 );
 CREATE POLICY "Compradores insertan pedidos" ON public.pedidos FOR INSERT WITH CHECK (
