@@ -9,6 +9,7 @@ const GestionEnvios = () => {
     const [cargando, setCargando] = useState(true);
     const [error, setError] = useState(null);
     const [miTiendaId, setMiTiendaId] = useState(null);
+    const [miPerfilId, setMiPerfilId] = useState(null);
 
     // Estado para el modal de detalle
     const [mostrarModalDetalle, setMostrarModalDetalle] = useState(false);
@@ -19,12 +20,13 @@ const GestionEnvios = () => {
             if (!user) return;
             const { data: perfilData } = await supabase
                 .from('perfiles')
-                .select('id_tienda')
+                .select('perfil_id, id_tienda')
                 .eq('id_usuario', user.id)
                 .single();
             
             if (perfilData?.id_tienda) {
                 setMiTiendaId(perfilData.id_tienda);
+                setMiPerfilId(perfilData.perfil_id);
             }
         };
         obtenerMiTienda();
@@ -112,9 +114,9 @@ const GestionEnvios = () => {
                             alert(`✅ ¡Pedido Aceptado! Stock de "${producto.nombre_producto}" actualizado a ${nuevoStock}`);
                             
                             // --- NUEVO: Alerta de Stock Bajo ---
-                            if (nuevoStock <= 5) {
+                            if (nuevoStock <= 5 && miPerfilId) {
                                 await supabase.from('notificaciones').insert([{
-                                    usuario_id: user.id, // ID del vendedor logueado
+                                    usuario_id: miPerfilId, // Usar perfil_id
                                     titulo: '⚠️ ¡Stock Bajo!',
                                     mensaje: `Atención: El producto "${producto.nombre_producto}" se está agotando. Quedan ${nuevoStock} unidades.`
                                 }]);

@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext";
 const Vendedor = () => {
   const { user } = useAuth();
   const [pedidos, setPedidos] = useState([]);
+  const [miPerfilId, setMiPerfilId] = useState(null);
   const [cargando, setCargando] = useState(true);
 
   const cargarPedidos = async () => {
@@ -13,10 +14,10 @@ const Vendedor = () => {
     try {
       setCargando(true);
       
-      // 1. Obtener la tienda del vendedor
+      // 1. Obtener la tienda del vendedor y su perfil_id
       const { data: perfil } = await supabase
         .from('perfiles')
-        .select('id_tienda')
+        .select('perfil_id, id_tienda')
         .eq('id_usuario', user.id)
         .maybeSingle();
         
@@ -24,6 +25,7 @@ const Vendedor = () => {
         setPedidos([]);
         return;
       }
+      setMiPerfilId(perfil.perfil_id); // Guardar perfil_id para notificaciones
       
       // 2. Obtener los pedidos asociados a los productos de su tienda
       const { data, error } = await supabase
@@ -102,9 +104,9 @@ const Vendedor = () => {
                   .eq('id_producto', pedido.id_producto || pedido.producto_id);
               
               // --- NUEVO: Alerta de Stock Bajo para el vendedor ---
-              if (nuevoStock <= 5) {
+              if (nuevoStock <= 5 && miPerfilId) {
                   await supabase.from('notificaciones').insert([{
-                      usuario_id: user.id, // ID del vendedor (auth)
+                      usuario_id: miPerfilId, // Usar perfil_id en lugar de user.id
                       titulo: '⚠️ ¡Stock Bajo!',
                       mensaje: `El producto "${producto.nombre_producto}" tiene solo ${nuevoStock} unidades disponibles.`
                   }]);
