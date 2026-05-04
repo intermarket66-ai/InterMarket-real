@@ -9,8 +9,12 @@ const VistaRol = () => {
   const { changeRole, signOut } = useAuth();
 
   const handleRoleSelection = (rol) => {
-    changeRole(rol);
-    navigate(rol === "vendedor" ? "/vendedor" : "/catalogo");
+    if (rol === "vendedor") {
+      navigate("/suscripcion");
+    } else {
+      changeRole(rol);
+      navigate("/catalogo");
+    }
   };
 
   const cerrarSesion = async () => {
