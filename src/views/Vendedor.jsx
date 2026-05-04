@@ -33,6 +33,8 @@ const Vendedor = () => {
           creado_en,
           precio_unitario,
           id_estado,
+          id_producto,
+          cantidad,
           productos!inner (nombre_producto, id_tienda),
           perfiles ( usuarios ( username ) )
         `)
@@ -77,6 +79,42 @@ const Vendedor = () => {
 
   const cambiarEstadoPedido = async (id_pedido, nuevoEstadoId) => {
     try {
+      // 1. Obtener datos del pedido antes de actualizar para saber qué producto es
+      const pedido = pedidos.find(p => p.id_pedido === id_pedido);
+      
+      // 2. Si el estado pasa a 2 (Aceptado/Pagado) y antes era 1 (Pendiente), reducimos stock
+      if (nuevoEstadoId === 2 && pedido && pedido.id_estado === 1) {
+          // Buscamos el stock actual del producto
+          const { data: producto } = await supabase
+              .from('productos')
+              .select('stock, nombre_producto')
+              .eq('id_producto', pedido.id_producto || pedido.producto_id)
+              .single();
+
+          if (producto && producto.stock !== null) {
+              const cantidad = Number(pedido.cantidad || 1);
+              const nuevoStock = Math.max(0, Number(producto.stock) - cantidad);
+              
+              // Actualizar el stock en Supabase
+              await supabase
+                  .from('productos')
+                  .update({ stock: nuevoStock })
+                  .eq('id_producto', pedido.id_producto || pedido.producto_id);
+              
+              // --- NUEVO: Alerta de Stock Bajo para el vendedor ---
+              if (nuevoStock <= 5) {
+                  await supabase.from('notificaciones').insert([{
+                      usuario_id: user.id, // ID del vendedor (auth)
+                      titulo: '⚠️ ¡Stock Bajo!',
+                      mensaje: `El producto "${producto.nombre_producto}" tiene solo ${nuevoStock} unidades disponibles.`
+                  }]);
+              }
+              
+              console.log(`Stock de ${producto.nombre_producto} reducido a ${nuevoStock}`);
+          }
+      }
+
+      // 3. Actualizar el estado del pedido
       const { error } = await supabase
         .from("pedidos")
         .update({ id_estado: nuevoEstadoId })
@@ -85,6 +123,7 @@ const Vendedor = () => {
       if (error) throw error;
       cargarPedidos();
     } catch (error) {
+      console.error("Error en cambiarEstadoPedido:", error);
       alert("Error al actualizar pedido");
     }
   };

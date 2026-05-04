@@ -77,60 +77,62 @@ const GestionEnvios = () => {
 
     const actualizarEstado = async (idPedido, nuevoEstado) => {
         try {
-            // 1. Obtener los datos del pedido antes de actualizar
-            const pedido = pedidos.find(p => p.id_pedido === idPedido);
-            
-            // 2. Si el estado pasa a 2 (Aceptado), reducimos stock
-            if (nuevoEstado === 2 && pedido) {
-                const prodId = pedido.id_producto || pedido.producto_id;
-                
-                if (prodId) {
-                    // Intentar obtener el stock actual
-                    const { data: producto, error: errFetch } = await supabase
-                        .from('productos')
-                        .select('stock, nombre_producto')
-                        .eq('id_producto', prodId)
-                        .single();
-
-                    if (errFetch) {
-                        alert("Error al buscar el producto: " + errFetch.message);
-                    } else if (producto) {
-                        const cantidadADescontar = Number(pedido.cantidad || 1);
-                        const stockActual = Number(producto.stock || 0);
-                        const nuevoStock = Math.max(0, stockActual - cantidadADescontar);
-                        
-                        // ACTUALIZACIÓN CRÍTICA
-                        const { error: errUpdate } = await supabase
-                            .from('productos')
-                            .update({ stock: nuevoStock })
-                            .eq('id_producto', prodId);
-                        
-                        if (errUpdate) {
-                            alert("❌ ERROR DE SUPABASE AL ACTUALIZAR STOCK: " + errUpdate.message);
-                        } else {
-                            alert(`✅ STOCK ACTUALIZADO: ${producto.nombre_producto} ahora tiene ${nuevoStock} unidades.`);
-                        }
-                    }
-                } else {
-                    alert("⚠️ No se encontró ID de producto en el pedido.");
-                }
-            }
-
-            // 3. Actualizar el estado del pedido
+            // 1. Actualizar primero el estado del pedido en Supabase
             const { error: errorEstado } = await supabase
                 .from('pedidos')
                 .update({ id_estado: nuevoEstado })
                 .eq('id_pedido', idPedido);
 
             if (errorEstado) throw errorEstado;
-            
-            // 4. Notificaciones
-            if (pedido) {
-                const msj = nuevoEstado === 2 ? 'Tu pedido ha sido aceptado y está en preparación.' : 
+
+            // 2. Si el nuevo estado es 2 (Aceptado), procedemos al stock
+            if (nuevoEstado === 2 && pedidoSeleccionado) {
+                const prodId = pedidoSeleccionado.id_producto || pedidoSeleccionado.producto_id;
+                
+                if (prodId) {
+                    // Consultar stock actual directamente de la base de datos
+                    const { data: producto } = await supabase
+                        .from('productos')
+                        .select('stock, nombre_producto')
+                        .eq('id_producto', prodId)
+                        .single();
+
+                    if (producto) {
+                        const cantidad = Number(pedidoSeleccionado.cantidad || 1);
+                        const stockActual = Number(producto.stock || 0);
+                        const nuevoStock = Math.max(0, stockActual - cantidad);
+
+                        // Actualizar el stock
+                        const { error: errStock } = await supabase
+                            .from('productos')
+                            .update({ stock: nuevoStock })
+                            .eq('id_producto', prodId);
+                        
+                        if (!errStock) {
+                            alert(`✅ ¡Pedido Aceptado! Stock de "${producto.nombre_producto}" actualizado a ${nuevoStock}`);
+                            
+                            // --- NUEVO: Alerta de Stock Bajo ---
+                            if (nuevoStock <= 5) {
+                                await supabase.from('notificaciones').insert([{
+                                    usuario_id: user.id, // ID del vendedor logueado
+                                    titulo: '⚠️ ¡Stock Bajo!',
+                                    mensaje: `Atención: El producto "${producto.nombre_producto}" se está agotando. Quedan ${nuevoStock} unidades.`
+                                }]);
+                            }
+                        } else {
+                            console.error("Error stock:", errStock);
+                        }
+                    }
+                }
+            }
+
+            // 3. Notificaciones y refrescar
+            if (pedidoSeleccionado) {
+                const msj = nuevoEstado === 2 ? 'Tu pedido ha sido aceptado.' : 
                             nuevoEstado === 4 ? 'Tu pedido ha sido entregado.' : 'Tu pedido ha sido cancelado.';
                 
                 await supabase.from('notificaciones').insert([{
-                    usuario_id: pedido.perfil_id,
+                    usuario_id: pedidoSeleccionado.perfil_id,
                     titulo: 'Actualización de Envío',
                     mensaje: msj
                 }]);
@@ -138,8 +140,12 @@ const GestionEnvios = () => {
 
             setMostrarModalDetalle(false);
             cargarPedidos();
+            
+            if (nuevoEstado !== 2) {
+                alert("Estado actualizado correctamente.");
+            }
         } catch (err) {
-            alert("Error crítico: " + err.message);
+            alert("Error: " + err.message);
         }
     };
 

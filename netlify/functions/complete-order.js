@@ -135,8 +135,9 @@ export const handler = async (event) => {
             perfil_id: perfilId,
             venta_id: venta.venta_id,
             id_producto: item.id_producto,
-            id_estado: 1, // El item individual empieza como 'Pendiente' hasta que el vendedor lo acepte
-            precio_unitario: item.precio_venta
+            id_estado: 1, 
+            precio_unitario: item.precio_venta,
+            cantidad: item.cantidad || 1
         }));
 
         const { error: pedidosError } = await supabase.from('pedidos').insert(pedidos);
