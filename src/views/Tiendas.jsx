@@ -96,7 +96,7 @@ const Tiendas = () => {
         }
 
         const texto = textoBusqueda.toLowerCase().trim();
-        const filtradas = tiendas.filter((tienda) => tienda.nombre_tienda?.toLowerCase().includes(texto));
+        const filtradas = tiendas.filter((tienda) => (tienda.nombre_tienda?.toLowerCase() || '').includes(texto));
         setTiendasFiltradas(filtradas);
     }, [textoBusqueda, tiendas]);
 

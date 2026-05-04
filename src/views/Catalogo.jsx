@@ -218,7 +218,10 @@ function Catalogo() {
                 ) : (
                     <Row className="g-2 g-md-4">
                         {productos
-                            .filter(p => p.nombre_producto?.toLowerCase().includes(busqueda.toLowerCase()) || p.categorias?.nombre_categoria?.toLowerCase().includes(busqueda.toLowerCase()))
+                            .filter(p => 
+                                (p.nombre_producto?.toLowerCase() || '').includes(busqueda.toLowerCase()) || 
+                                (p.categorias?.nombre_categoria?.toLowerCase() || '').includes(busqueda.toLowerCase())
+                            )
                             .filter(p => !mostrarSoloOfertas || (p.precio_original && p.precio_original > p.precio_venta))
                             .map((producto) => (
                                 <Col key={producto.id_producto} xs={6} sm={6} md={4} lg={3} xl={3}>

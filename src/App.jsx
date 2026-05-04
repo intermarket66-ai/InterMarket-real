@@ -19,7 +19,6 @@ import Mensajes from "./views/Mensajes";
 import CheckoutSuccess from "./views/CheckoutSuccess";
 import CheckoutCancel from "./views/CheckoutCancel";
 import GestionEnvios from "./views/GestionEnvios";
-import Suscripcion from "./views/Suscripcion";
 
 import "./App.css"
 
@@ -56,7 +55,6 @@ const AppLayout = () => {
           
           {/* Selección de vista/rol */}
           <Route path="/seleccion-rol" element={<RutaProtegida><VistaRol /></RutaProtegida>} />
-          <Route path="/suscripcion" element={<RutaProtegida><Suscripcion /></RutaProtegida>} />
           
           {/* Rutas compartidas o públicas */}
           <Route path="/catalogo" element={<Catalogo />} />

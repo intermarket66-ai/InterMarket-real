@@ -195,8 +195,8 @@ const eliminarCategoria = async () => {
     const textoLower = textoBusqueda.toLowerCase().trim();
     const filtradas = categorias.filter(
       (cat) =>
-        cat.nombre_categoria.toLowerCase().includes(textoLower) ||
-        (cat.descripcion_categoria && cat.descripcion_categoria.toLowerCase().includes(textoLower))
+        (cat.nombre_categoria?.toLowerCase() || '').includes(textoLower) ||
+        (cat.descripcion_categoria?.toLowerCase() || '').includes(textoLower)
     );
     setCategoriasFiltradas(filtradas);
   }
