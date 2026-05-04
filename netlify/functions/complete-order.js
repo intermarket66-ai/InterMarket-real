@@ -144,6 +144,32 @@ export const handler = async (event) => {
         const { error: pedidosError } = await supabase.from('pedidos').insert(pedidos);
         if (pedidosError) throw pedidosError;
 
+        // 6.1. Reducir Stock de los productos
+        for (const item of carrito) {
+            try {
+                // Usamos rpc para restar el stock de forma atómica si es posible, 
+                // o una actualización directa si confiamos en la lógica secuencial
+                const { data: currentProduct } = await supabase
+                    .from('productos')
+                    .select('stock')
+                    .eq('id_producto', item.id_producto)
+                    .single();
+
+                if (currentProduct && currentProduct.stock !== null) {
+                    const nuevoStock = Math.max(0, currentProduct.stock - (item.cantidad || 1));
+                    await supabase
+                        .from('productos')
+                        .update({ stock: nuevoStock })
+                        .eq('id_producto', item.id_producto);
+                    
+                    console.log(`[Stock] Actualizado producto ${item.id_producto}: ${currentProduct.stock} -> ${nuevoStock}`);
+                }
+            } catch (stockErr) {
+                console.error(`[Stock] Error al actualizar stock del producto ${item.id_producto}:`, stockErr);
+                // No lanzamos error para no romper la finalización del pedido si falla el stock
+            }
+        }
+
         // 7. Notificaciones a los vendedores
         const tiendasIds = [...new Set(carrito.map(item => item.id_tienda).filter(Boolean))];
         for (const idTienda of tiendasIds) {

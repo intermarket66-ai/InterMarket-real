@@ -653,6 +653,13 @@ body {
     flex-direction: column;
     height: 100%;
     border: 1px solid #f0f0f0;
+    transition: transform 0.2s ease;
+}
+
+@media (max-width: 576px) {
+    .shein-card:active {
+        transform: scale(0.98);
+    }
 }
 
 .shein-img-container {
@@ -674,45 +681,45 @@ body {
 
 .shein-floating-badge {
     position: absolute;
-    top: 8px;
-    left: 8px;
-    background: rgba(255, 255, 255, 0.95);
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 0.7rem;
+    top: 6px;
+    left: 6px;
+    background: #ff4646;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 0.65rem;
     font-weight: 800;
-    color: #ff4646;
+    color: white;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .shein-content {
-    padding: 10px;
+    padding: 8px;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 3px;
     flex: 1;
 }
 
 .shein-store-row {
     display: flex;
     align-items: center;
-    gap: 6px;
-    margin-bottom: 2px;
+    gap: 4px;
+    margin-bottom: 1px;
 }
 
 .shein-trends-tag {
     background: #8e44ad;
     color: white;
-    font-size: 0.6rem;
-    padding: 2px 6px;
-    border-radius: 4px;
+    font-size: 0.55rem;
+    padding: 1px 4px;
+    border-radius: 3px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
 .shein-store-name {
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     color: #666;
     font-weight: 500;
     white-space: nowrap;
@@ -721,7 +728,7 @@ body {
 }
 
 .shein-title {
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     font-weight: 500;
     color: #222;
     margin: 0;
@@ -729,27 +736,28 @@ body {
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    line-height: 1.3;
+    line-height: 1.2;
+    min-height: 1.8rem;
 }
 
 .shein-local-badge {
     background: #27ae60;
     color: white;
-    font-size: 0.65rem;
-    padding: 2px 5px;
+    font-size: 0.6rem;
+    padding: 1px 4px;
     border-radius: 3px;
     font-weight: 700;
-    margin-right: 5px;
+    margin-right: 3px;
     display: inline-block;
     vertical-align: middle;
 }
 
 .shein-stats {
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     color: #888;
     display: flex;
     align-items: center;
-    margin-top: 2px;
+    margin-top: 1px;
 }
 
 .shein-stars {
@@ -759,38 +767,40 @@ body {
 
 .shein-stars i {
     color: #f39c12;
+    font-size: 0.6rem;
 }
 
 .shein-price-row {
     display: flex;
+    flex-wrap: wrap;
     align-items: baseline;
-    gap: 8px;
+    gap: 4px;
     margin-top: auto;
     padding-top: 4px;
 }
 
 .shein-current-price {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     font-weight: 800;
     color: #ff4646;
 }
 
 .shein-current-price small {
-    font-size: 0.8rem;
-    margin-right: 2px;
+    font-size: 0.7rem;
+    margin-right: 1px;
 }
 
 .shein-discount-tag {
     color: #ff4646;
-    font-size: 0.75rem;
+    font-size: 0.65rem;
     font-weight: 600;
 }
 
 .shein-shipping {
-    font-size: 0.65rem;
+    font-size: 0.6rem;
     color: #27ae60;
     font-weight: 600;
-    margin-top: 4px;
+    margin-top: 2px;
     display: flex;
     align-items: center;
 }

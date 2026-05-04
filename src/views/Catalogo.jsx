@@ -117,14 +117,15 @@ function Catalogo() {
 
         // Toast notification (premium style)
         const toast = document.createElement('div');
-        toast.className = 'position-fixed bottom-0 end-0 p-4';
+        toast.className = 'position-fixed bottom-0 end-0 p-3 p-md-4 custom-toast-container';
         toast.style.zIndex = '9999';
+        toast.style.width = window.innerWidth < 576 ? '100%' : 'auto';
         toast.innerHTML = `
-            <div class="alert shadow-lg border-0 d-flex align-items-center" style="background: var(--color-primario); color: white; border-radius: 12px; min-width: 300px;">
+            <div class="alert shadow-lg border-0 d-flex align-items-center mb-0" style="background: var(--color-primario); color: white; border-radius: 12px; min-width: ${window.innerWidth < 576 ? 'calc(100vw - 32px)' : '300px'};">
                 <i class="bi bi-cart-check-fill fs-4 me-3"></i>
-                <div>
-                    <strong class="d-block">Añadido al carrito</strong>
-                    <small class="opacity-75">${producto.nombre_producto}</small>
+                <div style="overflow: hidden;">
+                    <strong class="d-block text-truncate">Añadido al carrito</strong>
+                    <small class="opacity-75 d-block text-truncate" style="max-width: 200px;">${producto.nombre_producto}</small>
                 </div>
                 <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="alert"></button>
             </div>
@@ -178,18 +179,18 @@ function Catalogo() {
 
                 {/* Promotional Banner */}
                 <div
-                    className="mb-5 rounded-xl p-4 p-md-5 d-flex flex-column flex-md-row justify-content-between align-items-center shadow-md position-relative overflow-hidden"
+                    className="mb-5 rounded-xl p-3 p-md-5 d-flex flex-column flex-md-row justify-content-between align-items-center shadow-md position-relative overflow-hidden"
                     style={{ background: 'linear-gradient(135deg, #0f4c5c 0%, #1a7a8a 100%)', borderRadius: '24px' }}
                 >
-                    <div className="position-relative z-1 text-center text-md-start mb-4 mb-md-0">
-                        <Badge bg="accent" className="mb-3 px-3 py-2 text-uppercase ls-1" style={{ background: 'var(--color-accent)' }}>Destacado</Badge>
-                        <h2 className="text-white fw-800 mb-2 fs-1">Semana de Ofertas</h2>
-                        <p className="text-white-50 mb-0 fs-5">Aprovecha descuentos exclusivos en toda la tienda.</p>
+                    <div className="position-relative z-1 text-center text-md-start mb-3 mb-md-0">
+                        <Badge bg="accent" className="mb-2 mb-md-3 px-3 py-2 text-uppercase ls-1" style={{ background: 'var(--color-accent)' }}>Destacado</Badge>
+                        <h2 className="text-white fw-800 mb-1 mb-md-2 fs-2 fs-md-1">Semana de Ofertas</h2>
+                        <p className="text-white-50 mb-0 fs-6 fs-md-5">Aprovecha descuentos exclusivos en toda la tienda.</p>
                     </div>
-                    <div className="position-relative z-1">
+                    <div className="position-relative z-1 w-100 w-md-auto">
                         <Button
                             variant="light"
-                            className="rounded-pill px-4 py-3 fw-bold shadow-sm"
+                            className="rounded-pill px-4 py-2 py-md-3 fw-bold shadow-sm w-100 w-md-auto"
                             onClick={() => setMostrarSoloOfertas(!mostrarSoloOfertas)}
                         >
                             {mostrarSoloOfertas ? (
@@ -200,7 +201,7 @@ function Catalogo() {
                         </Button>
                     </div>
                     {/* Decorative Elements */}
-                    <div className="position-absolute" style={{ width: '300px', height: '300px', background: 'rgba(255,255,255,0.05)', borderRadius: '50%', top: '-100px', right: '-100px' }}></div>
+                    <div className="position-absolute d-none d-md-block" style={{ width: '300px', height: '300px', background: 'rgba(255,255,255,0.05)', borderRadius: '50%', top: '-100px', right: '-100px' }}></div>
                 </div>
 
                 {cargando ? (
@@ -215,12 +216,12 @@ function Catalogo() {
                         <p className="text-muted opacity-75">Vuelve más tarde para ver nuevas novedades.</p>
                     </div>
                 ) : (
-                    <Row className="g-4">
+                    <Row className="g-2 g-md-4">
                         {productos
                             .filter(p => p.nombre_producto?.toLowerCase().includes(busqueda.toLowerCase()) || p.categorias?.nombre_categoria?.toLowerCase().includes(busqueda.toLowerCase()))
                             .filter(p => !mostrarSoloOfertas || (p.precio_original && p.precio_original > p.precio_venta))
                             .map((producto) => (
-                                <Col key={producto.id_producto} xs={6} sm={4} md={4} lg={3} xl={3}>
+                                <Col key={producto.id_producto} xs={6} sm={6} md={4} lg={3} xl={3}>
                                     {esMovil ? (
                                         <TarjetaCatalogoMovile 
                                             producto={producto}
