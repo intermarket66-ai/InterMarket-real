@@ -52,8 +52,8 @@ const ModalEdicionVenta = ({
                             <Form.Group className="mb-3">
                                 <Form.Label>Producto *</Form.Label>
                                 <Form.Select
-                                    name="producto_id"
-                                    value={ventaEditar.producto_id}
+                                    name="id_producto"
+                                    value={ventaEditar.id_producto}
                                     onChange={manejoCambioEdicion}
                                 >
                                     <option value="">Selecciona un producto</option>
@@ -218,7 +218,7 @@ const ModalEdicionVenta = ({
                     onClick={handleEditar}
                     disabled={
                         ventaEditar.pedido_id.trim() === "" ||
-                        ventaEditar.producto_id === "" ||
+                        ventaEditar.id_producto === "" ||
                         ventaEditar.comprador_id.trim() === "" ||
                         ventaEditar.monto_total === "" ||
                         ventaEditar.comision === "" ||

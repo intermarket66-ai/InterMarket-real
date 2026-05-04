@@ -89,7 +89,7 @@ const GestionEnvios = () => {
 
             // 2. Si el nuevo estado es 2 (Aceptado), procedemos al stock
             if (nuevoEstado === 2 && pedidoSeleccionado) {
-                const prodId = pedidoSeleccionado.id_producto || pedidoSeleccionado.producto_id;
+                const prodId = pedidoSeleccionado.id_producto;
                 
                 if (prodId) {
                     // Consultar stock actual directamente de la base de datos

@@ -105,7 +105,7 @@ CREATE TABLE IF NOT EXISTS public.pedidos (
   id_pedido UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   perfil_id UUID REFERENCES public.perfiles(perfil_id) ON DELETE CASCADE,
   venta_id UUID REFERENCES public.ventas(venta_id) ON DELETE CASCADE,
-  producto_id UUID REFERENCES public.productos(id_producto) ON DELETE SET NULL,
+  id_producto UUID REFERENCES public.productos(id_producto) ON DELETE SET NULL,
   id_estado INTEGER REFERENCES public.estados(id_estado) DEFAULT 1,
   precio_unitario NUMERIC(12,2) NOT NULL,
   creado_en TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -325,7 +325,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.pedidos;
   -- Tabla para reseñas de productos
   CREATE TABLE IF NOT EXISTS public.resenas_productos (
     id_resena UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    producto_id UUID REFERENCES public.productos(id_producto) ON DELETE CASCADE,
+    id_producto UUID REFERENCES public.productos(id_producto) ON DELETE CASCADE,
     comprador_id UUID REFERENCES public.perfiles(perfil_id) ON DELETE CASCADE,
     calificacion INTEGER CHECK (calificacion >= 1 AND calificacion <= 5) NOT NULL,
     comentario TEXT NOT NULL,

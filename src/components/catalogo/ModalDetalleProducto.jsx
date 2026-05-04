@@ -55,7 +55,7 @@ const ModalDetalleProducto = ({ mostrar, setMostrar, producto, agregarAlCarrito 
             const { data: resenasData } = await supabase
                 .from('reseñas_productos')
                 .select('*, perfiles(usuarios(username))')
-                .eq('producto_id', producto.id_producto)
+                .eq('id_producto', producto.id_producto)
                 .order('creado_en', { ascending: false });
             setResenas(resenasData || []);
 
@@ -91,7 +91,7 @@ const ModalDetalleProducto = ({ mostrar, setMostrar, producto, agregarAlCarrito 
         if (!nuevaResena.comentario.trim()) return;
         try {
             const { error } = await supabase.from('reseñas_productos').insert([{
-                producto_id: producto.id_producto,
+                id_producto: producto.id_producto,
                 comprador_id: perfilUsuario.perfil_id,
                 calificacion: nuevaResena.calificacion,
                 comentario: nuevaResena.comentario

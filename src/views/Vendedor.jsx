@@ -90,7 +90,7 @@ const Vendedor = () => {
           const { data: producto } = await supabase
               .from('productos')
               .select('stock, nombre_producto')
-              .eq('id_producto', pedido.id_producto || pedido.producto_id)
+              .eq('id_producto', pedido.id_producto)
               .single();
 
           if (producto && producto.stock !== null) {
@@ -101,7 +101,7 @@ const Vendedor = () => {
               await supabase
                   .from('productos')
                   .update({ stock: nuevoStock })
-                  .eq('id_producto', pedido.id_producto || pedido.producto_id);
+                  .eq('id_producto', pedido.id_producto);
               
               // --- NUEVO: Alerta de Stock Bajo para el vendedor ---
               if (nuevoStock <= 5 && miPerfilId) {
