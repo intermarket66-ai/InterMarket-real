@@ -273,7 +273,11 @@ body {
 
 /* --- NOTIFICACIONES --- */
 .notification-dropdown {
-    width: 320px;
+    width: 350px;
+    max-width: 90vw; /* Asegura que no sea más ancho que la pantalla */
+    right: 0 !important;
+    left: auto !important;
+    transform: none !important; /* Evita que Bootstrap lo mueva mal */
 }
 
 .notification-item {
@@ -347,6 +351,8 @@ body {
     border-radius: 12px !important;
     background: #f8fafc !important;
     border: 1px solid #e2e8f0 !important;
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
 }
 
 .mensajes-items {
@@ -493,4 +499,60 @@ body {
 .mensajes-items::-webkit-scrollbar-thumb, .mensajes-chat-cuerpo::-webkit-scrollbar-thumb {
     background: #e2e8f0;
     border-radius: 10px;
+}
+
+/* --- DISEÑO RESPONSIVO ADICIONAL --- */
+@media (max-width: 992px) {
+    .container { max-width: 96% !important; }
+}
+
+@media (max-width: 768px) {
+    h1 { font-size: 1.6rem !important; }
+    h2 { font-size: 1.4rem !important; }
+    
+    /* Tablas Responsivas */
+    .table-responsive, table {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Ajuste de Grid de productos a 2 columnas */
+    .row-cols-md-3 > *, .row-cols-lg-4 > * {
+        flex: 0 0 50% !important;
+        max-width: 50% !important;
+    }
+
+    /* Módales a pantalla completa casi completa */
+    .modal-dialog {
+        margin: 0.5rem !important;
+        max-width: calc(100% - 1rem) !important;
+    }
+    
+    .modal-body {
+        padding: 1rem !important;
+    }
+
+    /* Ajustes de Chat Mobile */
+    .mensajes-page {
+        height: calc(100vh - 120px);
+        margin-top: 1rem;
+    }
+    .burbuja-mensaje {
+        max-width: 85% !important;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Grid de productos a 1 columna */
+    .row-cols-md-3 > *, .row-cols-lg-4 > * {
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+    }
+    
+    .btn {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
 }
