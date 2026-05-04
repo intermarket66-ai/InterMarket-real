@@ -80,34 +80,51 @@ const GestionEnvios = () => {
             // 1. Obtener los datos del pedido antes de actualizar
             const pedido = pedidos.find(p => p.id_pedido === idPedido);
             
-            // 2. Si el estado pasa a 2 (Aceptado) y antes era 1 (Pendiente), reducimos stock
-            if (nuevoEstado === 2 && pedido && pedido.id_estado === 1) {
-                const { data: producto } = await supabase
-                    .from('productos')
-                    .select('stock')
-                    .eq('id_producto', pedido.id_producto)
-                    .single();
-
-                if (producto && producto.stock !== null) {
-                    const cantidadComprada = pedido.cantidad || 1;
-                    const nuevoStock = Math.max(0, producto.stock - cantidadComprada);
-                    
-                    await supabase
+            // 2. Si el estado pasa a 2 (Aceptado), reducimos stock
+            if (nuevoEstado === 2 && pedido) {
+                const prodId = pedido.id_producto || pedido.producto_id;
+                
+                if (prodId) {
+                    // Intentar obtener el stock actual
+                    const { data: producto, error: errFetch } = await supabase
                         .from('productos')
-                        .update({ stock: nuevoStock })
-                        .eq('id_producto', pedido.id_producto);
+                        .select('stock, nombre_producto')
+                        .eq('id_producto', prodId)
+                        .single();
+
+                    if (errFetch) {
+                        alert("Error al buscar el producto: " + errFetch.message);
+                    } else if (producto) {
+                        const cantidadADescontar = Number(pedido.cantidad || 1);
+                        const stockActual = Number(producto.stock || 0);
+                        const nuevoStock = Math.max(0, stockActual - cantidadADescontar);
+                        
+                        // ACTUALIZACIÓN CRÍTICA
+                        const { error: errUpdate } = await supabase
+                            .from('productos')
+                            .update({ stock: nuevoStock })
+                            .eq('id_producto', prodId);
+                        
+                        if (errUpdate) {
+                            alert("❌ ERROR DE SUPABASE AL ACTUALIZAR STOCK: " + errUpdate.message);
+                        } else {
+                            alert(`✅ STOCK ACTUALIZADO: ${producto.nombre_producto} ahora tiene ${nuevoStock} unidades.`);
+                        }
+                    }
+                } else {
+                    alert("⚠️ No se encontró ID de producto en el pedido.");
                 }
             }
 
             // 3. Actualizar el estado del pedido
-            const { error } = await supabase
+            const { error: errorEstado } = await supabase
                 .from('pedidos')
                 .update({ id_estado: nuevoEstado })
                 .eq('id_pedido', idPedido);
 
-            if (error) throw error;
+            if (errorEstado) throw errorEstado;
             
-            // 4. Notificar al usuario
+            // 4. Notificaciones
             if (pedido) {
                 const msj = nuevoEstado === 2 ? 'Tu pedido ha sido aceptado y está en preparación.' : 
                             nuevoEstado === 4 ? 'Tu pedido ha sido entregado.' : 'Tu pedido ha sido cancelado.';
@@ -122,7 +139,7 @@ const GestionEnvios = () => {
             setMostrarModalDetalle(false);
             cargarPedidos();
         } catch (err) {
-            alert("Error al actualizar estado: " + err.message);
+            alert("Error crítico: " + err.message);
         }
     };
 
