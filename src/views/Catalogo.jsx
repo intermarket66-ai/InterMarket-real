@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Badge, Spinner, Button, Form, InputGroup } from 'react-bootstrap';
 import { supabase } from '../database/supabaseconfig';
+import TarjetaCatalogoMovile from '../components/catalogo/TarjetaCatalogoMovile';
+import TarjetaCatalogo from '../components/catalogo/TarjetaCatalogo';
 import CarritoModal from '../components/catalogo/CarritoModal';
 import ModalMensaje from '../components/catalogo/ModalMensaje';
 import ModalDetalleProducto from '../components/catalogo/ModalDetalleProducto';
@@ -21,6 +23,13 @@ function Catalogo() {
     const [itemsCompradosRecientemente, setItemsCompradosRecientemente] = useState([]);
     const [productoSeleccionado, setProductoSeleccionado] = useState(null);
     const [miTiendaId, setMiTiendaId] = useState(null);
+    const [esMovil, setEsMovil] = useState(window.innerWidth < 768);
+
+    useEffect(() => {
+        const handleResize = () => setEsMovil(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     const abrirModalContacto = (producto) => {
         setProductoSeleccionado(producto);
@@ -39,7 +48,7 @@ function Catalogo() {
 
     useEffect(() => {
         cargarProductos();
-        
+
         const carritoGuardado = JSON.parse(localStorage.getItem('carrito') || '[]');
         setCarrito(carritoGuardado);
 
@@ -48,7 +57,7 @@ function Catalogo() {
         };
 
         window.addEventListener("abrirCarrito", handleAbrirCarrito);
-        
+
         const obtenerMiTienda = async () => {
             if (!user) return;
             const { data } = await supabase
@@ -146,17 +155,17 @@ function Catalogo() {
                             <InputGroup.Text className="bg-transparent border-0 pe-0">
                                 <i className="bi bi-search text-muted"></i>
                             </InputGroup.Text>
-                            <Form.Control 
+                            <Form.Control
                                 className="bg-transparent border-0 py-3"
-                                placeholder="¿Qué estás buscando hoy?" 
-                                value={busqueda} 
-                                onChange={(e) => setBusqueda(e.target.value)} 
+                                placeholder="¿Qué estás buscando hoy?"
+                                value={busqueda}
+                                onChange={(e) => setBusqueda(e.target.value)}
                             />
                         </InputGroup>
                     </Col>
                     <Col lg={3} md={4} className="text-md-end">
-                        <Button 
-                            variant="primary" 
+                        <Button
+                            variant="primary"
                             className="w-100 py-3 shadow-md fw-bold"
                             onClick={() => setMostrarCarrito(true)}
                             disabled={carrito.length === 0}
@@ -168,30 +177,30 @@ function Catalogo() {
                 </Row>
 
                 {/* Promotional Banner */}
-                <div 
-                  className="mb-5 rounded-xl p-4 p-md-5 d-flex flex-column flex-md-row justify-content-between align-items-center shadow-md position-relative overflow-hidden" 
-                  style={{ background: 'linear-gradient(135deg, #0f4c5c 0%, #1a7a8a 100%)', borderRadius: '24px' }}
+                <div
+                    className="mb-5 rounded-xl p-4 p-md-5 d-flex flex-column flex-md-row justify-content-between align-items-center shadow-md position-relative overflow-hidden"
+                    style={{ background: 'linear-gradient(135deg, #0f4c5c 0%, #1a7a8a 100%)', borderRadius: '24px' }}
                 >
-                  <div className="position-relative z-1 text-center text-md-start mb-4 mb-md-0">
-                    <Badge bg="accent" className="mb-3 px-3 py-2 text-uppercase ls-1" style={{ background: 'var(--color-accent)' }}>Destacado</Badge>
-                    <h2 className="text-white fw-800 mb-2 fs-1">Semana de Ofertas</h2>
-                    <p className="text-white-50 mb-0 fs-5">Aprovecha descuentos exclusivos en toda la tienda.</p>
-                  </div>
-                  <div className="position-relative z-1">
-                    <Button 
-                        variant="light" 
-                        className="rounded-pill px-4 py-3 fw-bold shadow-sm"
-                        onClick={() => setMostrarSoloOfertas(!mostrarSoloOfertas)}
-                    >
-                        {mostrarSoloOfertas ? (
-                            <><i className="bi bi-grid-3x3-gap me-2"></i>Ver todo</>
-                        ) : (
-                            <><i className="bi bi-percent me-2 text-danger"></i>Filtrar Ofertas</>
-                        )}
-                    </Button>
-                  </div>
-                  {/* Decorative Elements */}
-                  <div className="position-absolute" style={{ width: '300px', height: '300px', background: 'rgba(255,255,255,0.05)', borderRadius: '50%', top: '-100px', right: '-100px' }}></div>
+                    <div className="position-relative z-1 text-center text-md-start mb-4 mb-md-0">
+                        <Badge bg="accent" className="mb-3 px-3 py-2 text-uppercase ls-1" style={{ background: 'var(--color-accent)' }}>Destacado</Badge>
+                        <h2 className="text-white fw-800 mb-2 fs-1">Semana de Ofertas</h2>
+                        <p className="text-white-50 mb-0 fs-5">Aprovecha descuentos exclusivos en toda la tienda.</p>
+                    </div>
+                    <div className="position-relative z-1">
+                        <Button
+                            variant="light"
+                            className="rounded-pill px-4 py-3 fw-bold shadow-sm"
+                            onClick={() => setMostrarSoloOfertas(!mostrarSoloOfertas)}
+                        >
+                            {mostrarSoloOfertas ? (
+                                <><i className="bi bi-grid-3x3-gap me-2"></i>Ver todo</>
+                            ) : (
+                                <><i className="bi bi-percent me-2 text-danger"></i>Filtrar Ofertas</>
+                            )}
+                        </Button>
+                    </div>
+                    {/* Decorative Elements */}
+                    <div className="position-absolute" style={{ width: '300px', height: '300px', background: 'rgba(255,255,255,0.05)', borderRadius: '50%', top: '-100px', right: '-100px' }}></div>
                 </div>
 
                 {cargando ? (
@@ -211,103 +220,25 @@ function Catalogo() {
                             .filter(p => p.nombre_producto?.toLowerCase().includes(busqueda.toLowerCase()) || p.categorias?.nombre_categoria?.toLowerCase().includes(busqueda.toLowerCase()))
                             .filter(p => !mostrarSoloOfertas || (p.precio_original && p.precio_original > p.precio_venta))
                             .map((producto) => (
-                            <Col key={producto.id_producto} xs={6} md={4} lg={3}>
-                                <Card className="h-100 border-0 shadow-sm product-card-hover bg-white">
-                                    <div 
-                                        className="position-relative overflow-hidden ratio ratio-1x1" 
-                                        style={{ cursor: 'pointer' }}
-                                        onClick={() => abrirModalDetalles(producto)}
-                                    >
-                                        <Card.Img
-                                            variant="top"
-                                            src={producto.imagen_url?.[0] || 'https://via.placeholder.com/400?text=Sin+Imagen'}
-                                            alt={producto.nombre_producto}
-                                            className="w-100 h-100 object-fit-cover"
-                                            onError={(e) => e.target.src = 'https://via.placeholder.com/400?text=Error'}
+                                <Col key={producto.id_producto} xs={6} sm={4} md={4} lg={3} xl={3}>
+                                    {esMovil ? (
+                                        <TarjetaCatalogoMovile 
+                                            producto={producto}
+                                            abrirModalDetalles={abrirModalDetalles}
+                                            agregarAlCarrito={agregarAlCarrito}
+                                            miTiendaId={miTiendaId}
                                         />
-                                        {producto.precio_original > producto.precio_venta && (
-                                            <div className="position-absolute top-0 start-0 m-3">
-                                                <Badge bg="danger" className="px-2 py-1 shadow-sm">
-                                                    -{Math.round((1 - producto.precio_venta / producto.precio_original) * 100)}%
-                                                </Badge>
-                                            </div>
-                                        )}
-                                        {producto.stock === 0 && (
-                                            <div className="position-absolute top-0 end-0 m-3">
-                                                <Badge bg="dark" className="px-2 py-1 shadow-sm" style={{ fontSize: '0.65rem' }}>
-                                                    Agotado
-                                                </Badge>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <Card.Body className="d-flex flex-column p-3 p-md-4">
-                                        <div className="mb-2">
-                                            <span className="text-uppercase text-muted fw-700" style={{ fontSize: '10px', letterSpacing: '1px' }}>
-                                                {producto.categorias?.nombre_categoria || 'General'}
-                                            </span>
-                                        </div>
-                                        
-                                        <Card.Title 
-                                            className="fw-bold mb-3 fs-5 text-dark" 
-                                            style={{ cursor: 'pointer', lineHeight: '1.2', height: '2.4em', overflow: 'hidden' }}
-                                            onClick={() => abrirModalDetalles(producto)}
-                                        >
-                                            {producto.nombre_producto}
-                                        </Card.Title>
-
-                                        <div className="mt-auto">
-                                            <div className="d-flex align-items-center mb-3">
-                                                <span className="fs-4 fw-800 text-dark me-2">
-                                                    C${parseFloat(producto.precio_venta || 0).toFixed(2)}
-                                                </span>
-                                                {producto.precio_original > producto.precio_venta && (
-                                                    <span className="text-decoration-line-through text-muted small">
-                                                        C${parseFloat(producto.precio_original).toFixed(2)}
-                                                    </span>
-                                                )}
-                                            </div>
-                                            {/* Stock badge */}
-                                            {producto.stock !== null && producto.stock !== undefined && producto.stock <= 5 && producto.stock > 0 && (
-                                                <div className="mb-2">
-                                                    <span className="badge bg-warning text-dark rounded-pill" style={{ fontSize: '0.68rem' }}>
-                                                        <i className="bi bi-exclamation-triangle me-1"></i>¡Solo {producto.stock} left!
-                                                    </span>
-                                                </div>
-                                            )}
-
-                                            <div className="d-flex gap-2">
-                                                <Button 
-                                                    variant="outline-secondary" 
-                                                    className="rounded-pill p-2 flex-shrink-0"
-                                                    onClick={() => abrirModalContacto(producto)}
-                                                    style={{ width: '42px', height: '42px' }}
-                                                >
-                                                    <i className="bi bi-chat-text"></i>
-                                                </Button>
-                                                <Button 
-                                                    variant={producto.id_tienda === miTiendaId ? "outline-warning" : producto.stock === 0 ? "outline-secondary" : "primary"} 
-                                                    className="w-100 fw-bold rounded-pill"
-                                                    onClick={() => {
-                                                        if (producto.id_tienda === miTiendaId) {
-                                                            alert('No puedes comprar tus propios productos.');
-                                                        } else if (producto.stock === 0) {
-                                                            alert('Este producto está agotado.');
-                                                        } else {
-                                                            agregarAlCarrito(producto);
-                                                        }
-                                                    }}
-                                                    disabled={producto.id_tienda === miTiendaId || producto.stock === 0}
-                                                >
-                                                    <i className={`bi bi-${producto.id_tienda === miTiendaId ? 'shop' : producto.stock === 0 ? 'x-circle' : 'plus-lg'} me-2`}></i>
-                                                    {producto.id_tienda === miTiendaId ? 'Es tuyo' : producto.stock === 0 ? 'Agotado' : 'Añadir'}
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </Card.Body>
-                                </Card>
-                            </Col>
-                        ))}
+                                    ) : (
+                                        <TarjetaCatalogo 
+                                            producto={producto}
+                                            abrirModalDetalles={abrirModalDetalles}
+                                            abrirModalContacto={abrirModalContacto}
+                                            agregarAlCarrito={agregarAlCarrito}
+                                            miTiendaId={miTiendaId}
+                                        />
+                                    )}
+                                </Col>
+                            ))}
                     </Row>
                 )}
             </div>
@@ -321,12 +252,12 @@ function Catalogo() {
                 total={totalCarrito}
                 onCompraExitosa={handleCompraExitosa}
             />
-            <ModalMensaje 
+            <ModalMensaje
                 mostrar={mostrarModalMensaje}
                 setMostrar={setMostrarModalMensaje}
                 producto={productoSeleccionado}
             />
-            <ModalDetalleProducto 
+            <ModalDetalleProducto
                 mostrar={mostrarModalDetalle}
                 setMostrar={setMostrarModalDetalle}
                 producto={productoSeleccionado}
