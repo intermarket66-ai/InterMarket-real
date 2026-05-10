@@ -176,139 +176,195 @@ const CarritoModal = ({ mostrar, setMostrar, carrito, setCarrito, total, onCompr
     };
 
     return (
-        <Modal show={mostrar} onHide={() => setMostrar(false)} size="lg" centered>
-            <Modal.Header closeButton>
-                <Modal.Title>
-                    <i className="bi bi-cart-fill me-2"></i>
-                    Mi Carrito ({carrito.length} productos)
+        <Modal 
+            show={mostrar} 
+            onHide={() => setMostrar(false)} 
+            size="lg" 
+            centered 
+            className="carrito-moderno"
+            contentClassName="border-0 shadow-lg rounded-4"
+        >
+            <Modal.Header closeButton className="border-0 pb-0 pt-4 px-4">
+                <Modal.Title className="fw-bold d-flex align-items-center">
+                    <div className="bg-primary bg-opacity-10 p-2 rounded-3 me-3">
+                        <i className="bi bi-cart-fill text-primary"></i>
+                    </div>
+                    <span>Mi Carrito</span>
+                    <Badge bg="primary" className="ms-3 rounded-pill small fw-normal" style={{ fontSize: '0.75rem' }}>
+                        {carrito.length} {carrito.length === 1 ? 'producto' : 'productos'}
+                    </Badge>
                 </Modal.Title>
             </Modal.Header>
-            <Modal.Body>
+            <Modal.Body className="px-4 pt-4 pb-0">
                 {carrito.length === 0 ? (
                     <div className="text-center py-5">
-                        <i className="bi bi-cart-x display-1 text-muted mb-3"></i>
-                        <h4>Tu carrito está vacío</h4>
+                        <div className="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style={{ width: '100px', height: '100px' }}>
+                            <i className="bi bi-cart-x display-4 text-muted"></i>
+                        </div>
+                        <h4 className="fw-bold text-dark">Tu carrito está vacío</h4>
+                        <p className="text-muted">¡Agrega algunos productos para comenzar!</p>
+                        <Button variant="primary" className="rounded-pill px-4 mt-2" onClick={() => setMostrar(false)}>
+                            Explorar catálogo
+                        </Button>
                     </div>
                 ) : (
-                    <>
+                    <div className="carrito-items-container pe-2" style={{ maxHeight: '450px', overflowY: 'auto' }}>
                         {carrito.map((item) => (
-                            <Row key={item.id_producto} className="mb-3 align-items-center border-bottom pb-3">
-                                <Col xs={3}>
-                                    {item.imagen_url && item.imagen_url.length > 0 && (
-                                        <img 
-                                            src={item.imagen_url[0]} 
-                                            alt={item.nombre_producto}
-                                            style={{ width: '70px', height: '70px', objectFit: 'cover', borderRadius: '8px' }}
-                                        />
-                                    )}
-                                </Col>
-                                <Col xs={5}>
-                                    <strong>{item.nombre_producto}</strong>
-                                    <div className="text-muted small">
-                                        C${parseFloat(item.precio_venta).toFixed(2)} c/u
-                                    </div>
-                                    {item.stock !== undefined && item.stock !== null && (
-                                        <div className={`small mt-1 fw-bold ${item.stock <= 3 ? 'text-danger' : 'text-success'}`}>
-                                            <i className="bi bi-box-seam me-1"></i>
-                                            {item.stock === 0 ? 'Sin stock' : `${item.stock} disponibles`}
+                            <div key={item.id_producto} className="carrito-item-card mb-3 p-3 bg-white border rounded-4 shadow-sm hover-shadow transition">
+                                <Row className="align-items-center g-3">
+                                    <Col xs={3} md={2}>
+                                        <div className="position-relative">
+                                            {item.imagen_url && item.imagen_url.length > 0 ? (
+                                                <img 
+                                                    src={item.imagen_url[0]} 
+                                                    alt={item.nombre_producto}
+                                                    className="rounded-3 shadow-sm img-fluid"
+                                                    style={{ width: '100%', aspectRatio: '1/1', objectFit: 'cover' }}
+                                                />
+                                            ) : (
+                                                <div className="bg-light rounded-3 d-flex align-items-center justify-content-center" style={{ width: '100%', aspectRatio: '1/1' }}>
+                                                    <i className="bi bi-image text-muted fs-3"></i>
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
-                                </Col>
-                                <Col xs={4} className="text-end">
-                                    <div className="d-flex align-items-center justify-content-end gap-2">
-                                        <Button 
-                                            variant="outline-secondary" 
-                                            size="sm"
-                                            onClick={() => actualizarCantidad(item.id_producto, item.cantidad - 1, item.stock)}
-                                        >
-                                            -
-                                        </Button>
-                                        <span className="mx-2 fw-bold">{item.cantidad}</span>
-                                        <Button 
-                                            variant="outline-secondary" 
-                                            size="sm"
-                                            onClick={() => actualizarCantidad(item.id_producto, item.cantidad + 1, item.stock)}
-                                            disabled={item.stock !== undefined && item.stock !== null && item.cantidad >= item.stock}
-                                        >
-                                            +
-                                        </Button>
-                                        <Button 
-                                            variant="outline-danger" 
-                                            size="sm"
-                                            className="ms-3"
-                                            onClick={() => eliminarDelCarrito(item.id_producto)}
-                                        >
-                                            <i className="bi bi-trash"></i>
-                                        </Button>
-                                    </div>
-                                    <div className="mt-1 fw-bold text-success">
-                                        ${(parseFloat(item.precio_venta) * item.cantidad).toFixed(2)}
-                                    </div>
-                                </Col>
-                            </Row>
+                                    </Col>
+                                    <Col xs={9} md={5}>
+                                        <h6 className="fw-bold mb-1 text-truncate">{item.nombre_producto}</h6>
+                                        <div className="d-flex align-items-center gap-2 mb-2">
+                                            <span className="text-primary fw-bold">C${parseFloat(item.precio_venta).toFixed(2)}</span>
+                                            {item.stock !== undefined && item.stock !== null && (
+                                                <Badge bg={item.stock <= 3 ? 'danger' : 'success'} className="bg-opacity-10 text-dark border-0 rounded-pill small py-1" style={{ fontSize: '0.65rem' }}>
+                                                    <i className={`bi bi-box-seam me-1 ${item.stock <= 3 ? 'text-danger' : 'text-success'}`}></i>
+                                                    {item.stock === 0 ? 'Sin stock' : `${item.stock} disp.`}
+                                                </Badge>
+                                            )}
+                                        </div>
+                                    </Col>
+                                    <Col xs={12} md={5} className="d-flex align-items-center justify-content-between justify-content-md-end gap-3 mt-2 mt-md-0">
+                                        <div className="input-group input-group-sm bg-light rounded-pill p-1" style={{ width: 'fit-content' }}>
+                                            <Button 
+                                                variant="white" 
+                                                className="border-0 rounded-circle d-flex align-items-center justify-content-center p-0"
+                                                style={{ width: '28px', height: '28px' }}
+                                                onClick={() => actualizarCantidad(item.id_producto, item.cantidad - 1, item.stock)}
+                                            >
+                                                <i className="bi bi-dash"></i>
+                                            </Button>
+                                            <span className="px-3 d-flex align-items-center fw-bold" style={{ minWidth: '40px', justifyContent: 'center' }}>{item.cantidad}</span>
+                                            <Button 
+                                                variant="white" 
+                                                className="border-0 rounded-circle d-flex align-items-center justify-content-center p-0"
+                                                style={{ width: '28px', height: '28px' }}
+                                                onClick={() => actualizarCantidad(item.id_producto, item.cantidad + 1, item.stock)}
+                                                disabled={item.stock !== undefined && item.stock !== null && item.cantidad >= item.stock}
+                                            >
+                                                <i className="bi bi-plus"></i>
+                                            </Button>
+                                        </div>
+                                        
+                                        <div className="text-end d-flex align-items-center gap-3">
+                                            <div className="fw-bold text-dark">
+                                                C${(parseFloat(item.precio_venta) * item.cantidad).toFixed(2)}
+                                            </div>
+                                            <Button 
+                                                variant="outline-danger" 
+                                                size="sm"
+                                                className="border-0 rounded-circle d-flex align-items-center justify-content-center"
+                                                style={{ width: '32px', height: '32px' }}
+                                                onClick={() => eliminarDelCarrito(item.id_producto)}
+                                            >
+                                                <i className="bi bi-trash"></i>
+                                            </Button>
+                                        </div>
+                                    </Col>
+                                </Row>
+                            </div>
                         ))}
-
-                        <div className="mt-4 pt-3 border-top">
-                            <h6 className="fw-bold mb-3"><i className="bi bi-geo-alt me-2 text-primary"></i>Dirección de Entrega</h6>
-                            
-                            {direcciones.length === 0 ? (
-                                <div className="alert alert-warning py-2 small d-flex justify-content-between align-items-center">
-                                    <span>No tienes direcciones guardadas.</span>
-                                    <Button size="sm" variant="warning" onClick={() => { setMostrar(false); navegar("/perfil"); }}>
-                                        Añadir ahora
-                                    </Button>
-                                </div>
-                            ) : (
-                                <Form.Select 
-                                    className="mb-3"
-                                    value={idDireccionSel}
-                                    onChange={(e) => setIdDireccionSel(e.target.value)}
-                                    disabled={procesando}
-                                >
-                                    {direcciones.map(dir => (
-                                        <option key={dir.id_direccion} value={dir.id_direccion}>
-                                            {dir.nombre_calle} ({dir.nombre} {dir.apellido})
-                                        </option>
-                                    ))}
-                                </Form.Select>
-                            )}
-
-                            <Row>
-                                <Col>
-                                    <h5>Total a pagar:</h5>
-                                </Col>
-                                <Col className="text-end">
-                                    <h4 className="text-success fw-bold">
-                                        ${total.toFixed(2)}
-                                    </h4>
-                                </Col>
-                            </Row>
-                        </div>
-                    </>
+                    </div>
                 )}
             </Modal.Body>
-            <Modal.Footer>
-                <Button variant="secondary" onClick={() => setMostrar(false)}>
-                    Seguir Comprando
+
+            {carrito.length > 0 && (
+                <div className="px-4 pb-4">
+                    <div className="bg-light rounded-4 p-4 mt-3">
+                        <Row className="mb-4">
+                            <Col xs={12} lg={6}>
+                                <div className="d-flex align-items-center mb-3">
+                                    <i className="bi bi-geo-alt-fill text-primary me-2"></i>
+                                    <h6 className="fw-bold mb-0">Dirección de Entrega</h6>
+                                </div>
+                                
+                                {direcciones.length === 0 ? (
+                                    <div className="alert alert-warning border-0 shadow-sm rounded-3 py-2 px-3 small d-flex justify-content-between align-items-center mb-0">
+                                        <span className="me-2"><i className="bi bi-exclamation-circle me-1"></i>No tienes direcciones.</span>
+                                        <Button size="sm" variant="warning" className="rounded-pill text-white fw-bold py-1" onClick={() => { setMostrar(false); navegar("/perfil"); }}>
+                                            Configurar
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <Form.Select 
+                                        className="rounded-3 border-0 shadow-sm py-2 px-3"
+                                        value={idDireccionSel}
+                                        onChange={(e) => setIdDireccionSel(e.target.value)}
+                                        disabled={procesando}
+                                    >
+                                        {direcciones.map(dir => (
+                                            <option key={dir.id_direccion} value={dir.id_direccion}>
+                                                {dir.nombre_calle} ({dir.nombre})
+                                            </option>
+                                        ))}
+                                    </Form.Select>
+                                )}
+                            </Col>
+                            <Col xs={12} lg={6} className="mt-4 mt-lg-0 d-flex flex-column justify-content-center">
+                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                    <span className="text-muted">Subtotal:</span>
+                                    <span className="fw-bold">C${total.toFixed(2)}</span>
+                                </div>
+                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                    <span className="text-muted">Envío:</span>
+                                    <span className="text-success fw-bold small text-uppercase">Gratis</span>
+                                </div>
+                                <div className="d-flex justify-content-between align-items-center mt-2 pt-2 border-top border-secondary border-opacity-10">
+                                    <span className="h5 fw-bold mb-0">Total:</span>
+                                    <span className="h4 fw-bold text-primary mb-0">
+                                        C${total.toFixed(2)}
+                                    </span>
+                                </div>
+                            </Col>
+                        </Row>
+
+                        <div className="d-flex flex-wrap gap-2 justify-content-center justify-content-lg-end">
+                            <Button 
+                                variant="outline-secondary" 
+                                className="rounded-pill px-4 border-0" 
+                                onClick={vaciarCarrito} 
+                                disabled={procesando}
+                            >
+                                <i className="bi bi-trash me-2"></i>Vaciar
+                            </Button>
+                            
+                            <Button 
+                                variant="primary" 
+                                className="rounded-pill px-5 py-2 fw-bold shadow-sm" 
+                                onClick={realizarCompra} 
+                                disabled={procesando}
+                            >
+                                {procesando ? (
+                                    <><Spinner as="span" animation="border" size="sm" className="me-2" />Procesando...</>
+                                ) : (
+                                    <><i className="bi bi-credit-card-fill me-2"></i>Pagar Ahora</>
+                                )}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            <div className="text-center pb-4 pt-2">
+                <Button variant="link" className="text-muted text-decoration-none small" onClick={() => setMostrar(false)}>
+                    Seguir explorando productos
                 </Button>
-                {carrito.length > 0 && (
-                    <>
-                        <Button variant="outline-danger" onClick={vaciarCarrito} disabled={procesando}>
-                            Vaciar Carrito
-                        </Button>
-                        <Button variant="outline-primary" onClick={simularCompra} disabled={procesando}>
-                            {procesando ? '...' : 'Simular Pago'}
-                        </Button>
-                        <Button variant="success" onClick={realizarCompra} disabled={procesando}>
-                            {procesando ? (
-                                <><Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />Procesando...</>
-                            ) : (
-                                <><i className="bi bi-credit-card me-2"></i>Realizar Compra</>
-                            )}
-                        </Button>
-                    </>
-                )}
-            </Modal.Footer>
+            </div>
         </Modal>
     );
 };

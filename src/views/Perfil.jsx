@@ -1,8 +1,18 @@
 import React, { useEffect, useState } from "react";
-import { Container, Row, Col, Card, Spinner, Button, Tabs, Tab, Form, Table, Badge, Alert } from "react-bootstrap";
+import { Container, Row, Col, Card, Spinner, Button, Nav, Form, Table, Badge, Alert } from "react-bootstrap";
 import { supabase } from "../database/supabaseconfig";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+
+// Componentes de Perfil
+import HeaderPerfil from "../components/perfil/HeaderPerfil";
+import SidebarPerfil from "../components/perfil/SidebarPerfil";
+import HistorialPedidos from "../components/perfil/HistorialPedidos";
+import DireccionesPerfil from "../components/perfil/DireccionesPerfil";
+import MetodosPagoPerfil from "../components/perfil/MetodosPagoPerfil";
+import ModalEnvioPerfil from "../components/perfil/ModalEnvioPerfil";
+import ModalTarjetaPerfil from "../components/perfil/ModalTarjetaPerfil";
+import ModalDireccionPerfil from "../components/perfil/ModalDireccionPerfil";
 
 const Perfil = () => {
   const { user, session } = useAuth();
@@ -16,6 +26,9 @@ const Perfil = () => {
   const [fotoUrl, setFotoUrl] = useState("");
   const [archivoNuevo, setArchivoNuevo] = useState(null);
   const [mensaje, setMensaje] = useState({ texto: "", tipo: "" });
+  
+  // Estado para la pestaña activa (Diseño moderno)
+  const [activeTab, setActiveTab] = useState('perfil');
   
   // Detalle de envío
   const [showShipmentModal, setShowShipmentModal] = useState(false);
@@ -320,300 +333,286 @@ const Perfil = () => {
   }
 
   return (
-    <Container className="mt-5 pt-4">
-      <Row className="mb-4 align-items-center">
-        <Col xs={8} md={9}>
-          <h2 className="fw-bold text-primary mb-0"><i className="bi bi-person-circle me-2"></i>Mi Panel</h2>
-        </Col>
-        <Col xs={4} md={3} className="text-end">
-          <Button 
-            variant="outline-secondary" 
-            size="sm"
-            onClick={() => navegar("/seleccion-rol")}
-            className="rounded-pill px-3 shadow-sm"
-          >
-            <i className="bi bi-arrow-left-right me-1"></i>
-            <span className="d-none d-sm-inline">Cambiar Rol</span>
-          </Button>
-        </Col>
-      </Row>
-
-      <Tabs defaultActiveKey="perfil" className="mb-4">
-        {/* PESTAÑA MI INFORMACIÓN */}
-        <Tab eventKey="perfil" title={<span><i className="bi bi-info-circle me-2"></i>Mi Información</span>}>
-          <Card className="shadow-sm border-0 mt-3">
-            <Card.Body className="p-4">
-              {mensaje.texto && <Alert variant={mensaje.tipo}>{mensaje.texto}</Alert>}
-              <Row>
-                <Col md={4} className="text-center border-end mb-4 mb-md-0">
-                  <img
-                    src={fotoUrl || "https://ui-avatars.com/api/?name=" + encodeURIComponent(perfil.usuarios?.username || user.user_metadata?.full_name || "Usuario")}
-                    alt="Foto de perfil"
-                    className="rounded-circle mb-3 shadow"
-                    style={{ width: 150, height: 150, objectFit: "cover", border: '4px solid #fff' }}
-                  />
-                  <h4 className="fw-bold">{perfil.usuarios?.username || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "Usuario"}</h4>
-                  <p className="text-muted">{perfil.usuarios?.email || user.email}</p>
-                  <Badge bg="primary" className="px-3 py-2 text-uppercase">
-                    {perfil.rol || "Comprador"}
-                  </Badge>
-                </Col>
-                
-                <Col md={8} className="ps-md-4">
-                  <h5 className="border-bottom pb-2 mb-4">Editar Perfil</h5>
-                  
-                  <Form.Group className="mb-4">
-                    <Form.Label className="fw-bold text-muted">Fotografía de Perfil</Form.Label>
-                    <Form.Control
-                      type="file"
-                      accept="image/*"
-                      onChange={manejarArchivo}
-                    />
-                    <Form.Text className="text-muted">
-                      Selecciona una imagen en formato JPG o PNG desde tu dispositivo.
-                    </Form.Text>
-                  </Form.Group>
-
-                  <Button variant="success" onClick={guardarPerfil} disabled={guardando}>
-                    {guardando ? 'Guardando...' : 'Guardar Cambios'}
-                  </Button>
-                </Col>
-              </Row>
-            </Card.Body>
-          </Card>
-        </Tab>
-
-        {/* PESTAÑA MÉTODOS DE PAGO */}
-        <Tab eventKey="metodos" title={<span><i className="bi bi-credit-card me-2"></i>Métodos de Pago</span>}>
-          <Card className="shadow-sm border-0 mt-3">
-            <Card.Body className="p-4">
-              <div className="d-flex justify-content-between align-items-center border-bottom pb-2 mb-4">
-                <h5 className="mb-0">Tarjetas guardadas</h5>
-                <Button 
-                  variant="primary" 
-                  size="sm" 
-                  className="rounded-pill px-3"
-                  onClick={() => setShowAddModal(true)}
-                >
-                  <i className="bi bi-plus-lg me-1"></i>Añadir Tarjeta
-                </Button>
+    <div className="perfil-modern-page pb-5">
+      {/* Header con Portada */}
+      <div className="perfil-header-banner position-relative">
+        <div className="banner-gradient"></div>
+        <Container>
+          <div className="perfil-header-content d-flex flex-column flex-md-row align-items-center align-items-md-end gap-4">
+            <div className="position-relative">
+              <img
+                src={fotoUrl || "https://ui-avatars.com/api/?name=" + encodeURIComponent(perfil.usuarios?.username || user.user_metadata?.full_name || "Usuario")}
+                alt="Foto de perfil"
+                className="rounded-circle profile-avatar shadow-lg border border-4 border-white"
+                style={{ width: 160, height: 160, objectFit: "cover" }}
+              />
+              <label htmlFor="upload-photo" className="btn btn-primary rounded-circle position-absolute bottom-0 end-0 shadow-sm p-2 d-flex align-items-center justify-content-center" style={{ width: 40, height: 40, cursor: 'pointer' }}>
+                <i className="bi bi-camera-fill"></i>
+                <input type="file" id="upload-photo" className="d-none" accept="image/*" onChange={manejarArchivo} />
+              </label>
+            </div>
+            
+            <div className="perfil-info-text text-center text-md-start pb-2">
+              <div className="d-flex flex-wrap align-items-center justify-content-center justify-content-md-start gap-2 mb-1">
+                <h1 className="fw-900 mb-0 text-white">{perfil.usuarios?.username || user.user_metadata?.full_name || "Usuario"}</h1>
+                <Badge bg="light" text="dark" className="rounded-pill px-3 py-2 text-uppercase ls-1 small fw-bold shadow-sm">
+                  {perfil.rol || "Comprador"}
+                </Badge>
               </div>
-
-              {metodosPago.length === 0 ? (
-                <div className="text-center p-5 bg-light rounded">
-                  <i className="bi bi-credit-card text-muted mb-3" style={{ fontSize: '3rem' }}></i>
-                  <p className="text-muted">No hay tarjetas guardadas en este perfil.</p>
-                </div>
-              ) : (
-                <Table responsive hover className="align-middle">
-                  <thead className="table-light">
-                    <tr>
-                      <th>Tipo</th>
-                      <th>Últimos 4</th>
-                      <th>ID Stripe</th>
-                      <th>Guardada</th>
-                      <th>Acción</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {metodosPago.map((metodo) => (
-                      <tr key={metodo.id_metodo_pago}>
-                        <td>{metodo.tipo_metodo || 'Tarjeta'}</td>
-                        <td>**** **** **** {metodo.ultimo4 || '----'}</td>
-                        <td className="text-truncate" style={{ maxWidth: 180 }}>{metodo.id_stripe_payment_method || '-'}</td>
-                        <td>{metodo.creado_en ? new Date(metodo.creado_en).toLocaleDateString() : '-'}</td>
-                         <td>
-                          <Button
-                            variant="outline-danger"
-                            size="sm"
-                            onClick={() => eliminarTarjeta(metodo.id_metodo_pago)}
-                            disabled={eliminandoTarjetaId === metodo.id_metodo_pago}
-                          >
-                            {eliminandoTarjetaId === metodo.id_metodo_pago ? '...' : <i className="bi bi-trash"></i>}
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
-              )}
-            </Card.Body>
-          </Card>
-        </Tab>
-
-        {/* PESTAÑA DIRECCIONES */}
-        <Tab eventKey="direcciones" title={<span><i className="bi bi-geo-alt me-2"></i>Direcciones</span>}>
-          <Card className="shadow-sm border-0 mt-3">
-            <Card.Body className="p-4">
-              <div className="d-flex justify-content-between align-items-center border-bottom pb-2 mb-4">
-                <h5 className="mb-0">Mis Direcciones de Entrega</h5>
-                <Button 
-                  variant="primary" 
-                  size="sm" 
-                  className="rounded-pill px-3"
-                  onClick={() => setShowAddressModal(true)}
-                >
-                  <i className="bi bi-plus-lg me-1"></i>Añadir Dirección
-                </Button>
-              </div>
-
-              {direcciones.length === 0 ? (
-                <div className="text-center p-5 bg-light rounded">
-                  <i className="bi bi-geo text-muted mb-3" style={{ fontSize: '3rem' }}></i>
-                  <p className="text-muted">No has guardado ninguna dirección todavía.</p>
-                </div>
-              ) : (
-                <Row xs={1} md={2} className="g-3">
-                  {direcciones.map(dir => (
-                    <Col key={dir.id_direccion}>
-                      <Card className="h-100 border shadow-sm">
-                        <Card.Body>
-                          <div className="d-flex justify-content-between">
-                            <h6 className="fw-bold">{dir.nombre} {dir.apellido}</h6>
-                            <Button variant="link" className="text-danger p-0" onClick={() => eliminarDireccion(dir.id_direccion)}>
-                              <i className="bi bi-trash"></i>
-                            </Button>
-                          </div>
-                          <div className="small text-muted mb-2">
-                            <i className="bi bi-geo-alt-fill me-1 text-primary"></i>
-                            {dir.nombre_calle}
-                          </div>
-                          {dir.descripcion && <div className="small mb-2 italic">"{dir.descripcion}"</div>}
-                          <div className="d-flex justify-content-between mt-3 align-items-center">
-                            <Badge bg="light" text="dark" className="border">CP: {dir.codigo_postal || 'N/A'}</Badge>
-                            <span className="small text-muted"><i className="bi bi-telephone me-1"></i>{dir.numero_telefono}</span>
-                          </div>
-                        </Card.Body>
-                      </Card>
-                    </Col>
-                  ))}
-                </Row>
-              )}
-            </Card.Body>
-          </Card>
-        </Tab>
-
-        {/* PESTAÑA MIS PEDIDOS */}
-        <Tab eventKey="pedidos" title={<span><i className="bi bi-box-seam me-2"></i>Mis Pedidos ({pedidos.length})</span>}>
-          <Card className="shadow-sm border-0 mt-3">
-            <Card.Body className="p-4">
-              <h5 className="border-bottom pb-2 mb-4">Historial de Compras</h5>
+              <p className="text-white-50 mb-3 fs-5">{perfil.usuarios?.email || user.email}</p>
               
-              {pedidos.length === 0 ? (
-                <div className="text-center p-5 bg-light rounded">
-                  <i className="bi bi-cart-x text-muted mb-3" style={{ fontSize: '3rem' }}></i>
-                  <p className="text-muted">Aún no has realizado ninguna compra.</p>
-                </div>
-              ) : (
-                <>
-                  {/* VISTA MÓVIL (TARJETAS) */}
-                  <div className="d-lg-none">
-                    <Row xs={1} md={2} className="g-3">
+              <div className="d-flex gap-2 justify-content-center justify-content-md-start">
+                <Button 
+                  variant="white" 
+                  size="sm"
+                  onClick={() => navegar("/seleccion-rol")}
+                  className="rounded-pill px-4 fw-bold shadow-sm bg-white border-0 transition-all hover-scale"
+                >
+                  <i className="bi bi-arrow-left-right me-2"></i>Cambiar Rol
+                </Button>
+                {archivoNuevo && (
+                  <Button variant="success" size="sm" onClick={guardarPerfil} disabled={guardando} className="rounded-pill px-4 shadow-sm fw-bold border-0 pulse-soft">
+                    {guardando ? <Spinner animation="border" size="sm" /> : <><i className="bi bi-check2-circle me-2"></i>Guardar Foto</>}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </Container>
+      </div>
+
+      <Container className="mt-5">
+        {mensaje.texto && (
+          <Alert variant={mensaje.tipo} className="rounded-4 shadow-sm border-0 d-flex align-items-center mb-4">
+            <i className={`bi bi-${mensaje.tipo === 'success' ? 'check-circle-fill' : 'exclamation-triangle-fill'} me-3 fs-4`}></i>
+            {mensaje.texto}
+          </Alert>
+        )}
+
+        <Row className="g-4">
+          <Col lg={3}>
+            <div className="perfil-nav-sidebar sticky-top" style={{ top: '100px', zIndex: 10 }}>
+              <Card className="border-0 shadow-sm rounded-4 overflow-hidden">
+                <Nav variant="pills" className="flex-column p-2 custom-perfil-pills" activeKey={activeTab} onSelect={(k) => setActiveTab(k)}>
+                  <Nav.Item>
+                    <Nav.Link eventKey="perfil" className="rounded-3 d-flex align-items-center gap-3 py-3 px-4">
+                      <i className="bi bi-person-badge fs-5"></i> Mi Cuenta
+                    </Nav.Link>
+                  </Nav.Item>
+                  <Nav.Item>
+                    <Nav.Link eventKey="pedidos" className="rounded-3 d-flex align-items-center gap-3 py-3 px-4">
+                      <i className="bi bi-box-seam fs-5"></i> Mis Pedidos
+                      {pedidos.length > 0 && <Badge bg="primary" pill className="ms-auto">{pedidos.length}</Badge>}
+                    </Nav.Link>
+                  </Nav.Item>
+                  <Nav.Item>
+                    <Nav.Link eventKey="direcciones" className="rounded-3 d-flex align-items-center gap-3 py-3 px-4">
+                      <i className="bi bi-geo-alt fs-5"></i> Direcciones
+                    </Nav.Link>
+                  </Nav.Item>
+                  <Nav.Item>
+                    <Nav.Link eventKey="metodos" className="rounded-3 d-flex align-items-center gap-3 py-3 px-4">
+                      <i className="bi bi-credit-card fs-5"></i> Pagos
+                    </Nav.Link>
+                  </Nav.Item>
+                </Nav>
+              </Card>
+            </div>
+          </Col>
+
+          <Col lg={9}>
+            <div className="perfil-content-area">
+              {activeTab === 'perfil' && (
+                <Card className="border-0 shadow-sm rounded-4 p-4">
+                  <h4 className="fw-bold mb-4 d-flex align-items-center">
+                    <i className="bi bi-shield-check text-primary me-3 fs-3"></i>
+                    Información Personal
+                  </h4>
+                  <Row className="g-4">
+                    <Col md={6}>
+                      <div className="info-box p-4 bg-light rounded-4 border-0">
+                        <small className="text-muted d-block mb-1 text-uppercase fw-bold ls-1">Nombre de Usuario</small>
+                        <div className="fs-5 fw-bold">{perfil.usuarios?.username || 'No definido'}</div>
+                      </div>
+                    </Col>
+                    <Col md={6}>
+                      <div className="info-box p-4 bg-light rounded-4 border-0">
+                        <small className="text-muted d-block mb-1 text-uppercase fw-bold ls-1">Correo Electrónico</small>
+                        <div className="fs-5 fw-bold">{perfil.usuarios?.email || 'No definido'}</div>
+                      </div>
+                    </Col>
+                    <Col md={6}>
+                      <div className="info-box p-4 bg-light rounded-4 border-0">
+                        <small className="text-muted d-block mb-1 text-uppercase fw-bold ls-1">Rol de Cuenta</small>
+                        <div className="fs-5 fw-bold text-primary">{perfil.rol || 'Comprador'}</div>
+                      </div>
+                    </Col>
+                    <Col md={6}>
+                      <div className="info-box p-4 bg-light rounded-4 border-0">
+                        <small className="text-muted d-block mb-1 text-uppercase fw-bold ls-1">Miembro desde</small>
+                        <div className="fs-5 fw-bold">{new Date(perfil.creado_en).toLocaleDateString()}</div>
+                      </div>
+                    </Col>
+                  </Row>
+                </Card>
+              )}
+
+              {activeTab === 'pedidos' && (
+                <Card className="border-0 shadow-sm rounded-4 p-4">
+                  <h4 className="fw-bold mb-4 d-flex align-items-center">
+                    <i className="bi bi-receipt text-primary me-3 fs-3"></i>
+                    Historial de Compras
+                  </h4>
+                  {pedidos.length === 0 ? (
+                    <div className="text-center py-5 bg-light rounded-4 border-dashed">
+                      <i className="bi bi-cart-x text-muted mb-3 d-block" style={{ fontSize: '4rem' }}></i>
+                      <h5 className="text-muted fw-bold">No has realizado pedidos todavía</h5>
+                      <Button variant="primary" className="rounded-pill mt-3 px-4 fw-bold shadow-sm" onClick={() => navegar("/catalogo")}>Ir al Catálogo</Button>
+                    </div>
+                  ) : (
+                    <div className="pedidos-list">
                       {pedidos.map(pedido => (
-                        <Col key={pedido.id_pedido}>
-                          <Card className="h-100 shadow-sm border-0">
-                            <Card.Body>
-                              <div className="d-flex justify-content-between align-items-center mb-2">
-                                <small className="text-muted">Pedido #{pedido.id_pedido.split('-')[0]}</small>
-                                <Badge bg={getBadgeColor(pedido.id_estado)} className="px-2 py-1 text-uppercase">
+                        <Card key={pedido.id_pedido} className="border-0 shadow-sm rounded-4 mb-3 hover-shadow-lg transition-all overflow-hidden border-start border-4" style={{ borderLeftColor: `var(--bs-${getBadgeColor(pedido.id_estado)})` }}>
+                          <Card.Body className="p-3">
+                            <Row className="align-items-center">
+                              <Col xs={12} md={5} className="mb-3 mb-md-0">
+                                <div className="d-flex align-items-center">
+                                  <div className="bg-light p-1 rounded-3 me-3">
+                                    {pedido.productos?.imagen_url?.[0] ? (
+                                      <img src={pedido.productos.imagen_url[0]} alt="" style={{ width: 60, height: 60, objectFit: 'cover' }} className="rounded-2 shadow-sm" />
+                                    ) : (
+                                      <div className="d-flex align-items-center justify-content-center bg-white rounded-2" style={{ width: 60, height: 60 }}>
+                                        <i className="bi bi-image text-muted fs-4"></i>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="overflow-hidden">
+                                    <h6 className="fw-bold mb-0 text-truncate">{pedido.productos?.nombre_producto}</h6>
+                                    <small className="text-muted">ID: #{pedido.id_pedido.split('-')[0]}</small>
+                                  </div>
+                                </div>
+                              </Col>
+                              <Col xs={6} md={2} className="text-center">
+                                <small className="text-muted d-block">Fecha</small>
+                                <span className="fw-bold">{new Date(pedido.creado_en).toLocaleDateString()}</span>
+                              </Col>
+                              <Col xs={6} md={2} className="text-center">
+                                <small className="text-muted d-block">Total</small>
+                                <span className="text-success fw-bold">C${Number(pedido.precio_unitario).toFixed(2)}</span>
+                              </Col>
+                              <Col xs={12} md={3} className="text-end mt-3 mt-md-0">
+                                <Badge bg={getBadgeColor(pedido.id_estado)} className="rounded-pill px-3 py-2 text-uppercase ls-1 mb-2 d-inline-block w-100 mb-2 shadow-sm">
                                   {getEstadoTexto(pedido.id_estado)}
                                 </Badge>
+                                <Button variant="outline-primary" size="sm" className="rounded-pill w-100 fw-bold border-2" onClick={() => { setPedidoDetalle(pedido); setShowShipmentModal(true); }}>
+                                  <i className="bi bi-truck me-2"></i>Seguir Pedido
+                                </Button>
+                              </Col>
+                            </Row>
+                          </Card.Body>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+              )}
+
+              {activeTab === 'direcciones' && (
+                <Card className="border-0 shadow-sm rounded-4 p-4">
+                  <div className="d-flex justify-content-between align-items-center mb-4">
+                    <h4 className="fw-bold mb-0 d-flex align-items-center">
+                      <i className="bi bi-geo-alt-fill text-primary me-3 fs-3"></i>
+                      Mis Direcciones
+                    </h4>
+                    <Button variant="primary" size="sm" className="rounded-pill px-4 fw-bold shadow-sm" onClick={() => setShowAddressModal(true)}>
+                      <i className="bi bi-plus-lg me-2"></i>Nueva
+                    </Button>
+                  </div>
+                  {direcciones.length === 0 ? (
+                    <div className="text-center py-5 bg-light rounded-4 border-dashed">
+                      <i className="bi bi-geo text-muted mb-3 d-block" style={{ fontSize: '4rem' }}></i>
+                      <h5 className="text-muted fw-bold">No tienes direcciones guardadas</h5>
+                    </div>
+                  ) : (
+                    <Row className="g-3">
+                      {direcciones.map(dir => (
+                        <Col key={dir.id_direccion} md={6}>
+                          <Card className="h-100 border shadow-sm rounded-4 hover-shadow transition-all bg-light border-0">
+                            <Card.Body className="p-4">
+                              <div className="d-flex justify-content-between align-items-start mb-3">
+                                <div className="bg-white p-2 rounded-circle shadow-sm">
+                                  <i className="bi bi-house-door-fill text-primary"></i>
+                                </div>
+                                <Button variant="link" className="text-danger p-0" onClick={() => eliminarDireccion(dir.id_direccion)}>
+                                  <i className="bi bi-trash fs-5"></i>
+                                </Button>
                               </div>
-                              <div className="d-flex align-items-center mb-3">
-                                {pedido.productos?.imagen_url?.[0] ? (
-                                  <img 
-                                    src={pedido.productos.imagen_url[0]} 
-                                    alt="" 
-                                    style={{width: '50px', height: '50px', objectFit: 'cover', borderRadius: '6px'}} 
-                                    className="me-3 shadow-sm"
-                                  />
-                                ) : (
-                                  <div className="bg-light me-3 rounded d-flex align-items-center justify-content-center" style={{width: '50px', height: '50px'}}>
-                                    <i className="bi bi-image text-muted"></i>
-                                  </div>
-                                )}
-                                <Card.Title className="h6 mb-0">{pedido.productos?.nombre_producto}</Card.Title>
+                              <h6 className="fw-bold mb-1 fs-5">{dir.nombre} {dir.apellido}</h6>
+                              <p className="text-secondary mb-3 small lh-sm">{dir.nombre_calle}</p>
+                              {dir.descripcion && <div className="small mb-3 font-italic text-muted px-3 border-start border-3">"{dir.descripcion}"</div>}
+                              <div className="d-flex justify-content-between align-items-center mt-3 pt-3 border-top border-secondary border-opacity-10">
+                                <Badge bg="white" text="dark" className="border shadow-sm px-3 py-2 rounded-pill fw-bold">CP: {dir.codigo_postal || 'N/A'}</Badge>
+                                <span className="small fw-bold text-primary"><i className="bi bi-telephone-fill me-2"></i>{dir.numero_telefono}</span>
                               </div>
-                              <hr className="my-2" />
-                              <div className="d-flex justify-content-between mb-2">
-                                <span className="text-muted">Fecha:</span>
-                                <strong>{new Date(pedido.creado_en).toLocaleDateString()}</strong>
-                              </div>
-                              <div className="d-flex justify-content-between align-items-center">
-                                <span className="text-muted">Precio:</span>
-                                <strong className="text-success">C${Number(pedido.precio_unitario).toFixed(2)}</strong>
-                              </div>
-                              <Button 
-                                variant="primary" 
-                                size="sm" 
-                                className="w-100 mt-3 rounded-pill"
-                                onClick={() => { setPedidoDetalle(pedido); setShowShipmentModal(true); }}
-                              >
-                                <i className="bi bi-truck me-2"></i> Ver Detalle de Envío
-                              </Button>
                             </Card.Body>
                           </Card>
                         </Col>
                       ))}
                     </Row>
-                  </div>
-
-                  {/* VISTA ESCRITORIO (TABLA) */}
-                  <div className="d-none d-lg-block">
-                    <Table responsive hover className="align-middle">
-                      <thead className="table-light">
-                        <tr>
-                          <th>Pedido</th>
-                          <th>Fecha</th>
-                          <th>Producto</th>
-                          <th>Precio</th>
-                          <th>Estado</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {pedidos.map(pedido => (
-                          <tr key={pedido.id_pedido}>
-                            <td><small className="text-muted">#{pedido.id_pedido.split('-')[0]}</small></td>
-                            <td>{new Date(pedido.creado_en).toLocaleDateString()}</td>
-                            <td>
-                              <div className="d-flex align-items-center">
-                                {pedido.productos?.imagen_url?.[0] && (
-                                  <img 
-                                    src={pedido.productos.imagen_url[0]} 
-                                    alt="" 
-                                    style={{width: '40px', height: '40px', objectFit: 'cover', borderRadius: '4px'}} 
-                                    className="me-2"
-                                  />
-                                )}
-                                <span className="fw-bold">{pedido.productos?.nombre_producto}</span>
-                              </div>
-                            </td>
-                            <td className="text-success fw-bold">${Number(pedido.precio_unitario).toFixed(2)}</td>
-                            <td>
-                              <Badge bg={getBadgeColor(pedido.id_estado)} className="px-3 py-2 text-uppercase shadow-sm">
-                                {getEstadoTexto(pedido.id_estado)}
-                              </Badge>
-                            </td>
-                            <td>
-                              <Button 
-                                variant="outline-primary" 
-                                size="sm" 
-                                onClick={() => { setPedidoDetalle(pedido); setShowShipmentModal(true); }}
-                              >
-                                <i className="bi bi-truck me-1"></i> Detalle
-                              </Button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </Table>
-                  </div>
-                </>
+                  )}
+                </Card>
               )}
-            </Card.Body>
-          </Card>
-        </Tab>
-      </Tabs>
+
+              {activeTab === 'metodos' && (
+                <Card className="border-0 shadow-sm rounded-4 p-4">
+                  <div className="d-flex justify-content-between align-items-center mb-4">
+                    <h4 className="fw-bold mb-0 d-flex align-items-center">
+                      <i className="bi bi-credit-card-2-front-fill text-primary me-3 fs-3"></i>
+                      Métodos de Pago
+                    </h4>
+                    <Button variant="primary" size="sm" className="rounded-pill px-4 fw-bold shadow-sm" onClick={() => setShowAddModal(true)}>
+                      <i className="bi bi-plus-lg me-2"></i>Añadir Tarjeta
+                    </Button>
+                  </div>
+                  {metodosPago.length === 0 ? (
+                    <div className="text-center py-5 bg-light rounded-4 border-dashed">
+                      <i className="bi bi-credit-card text-muted mb-3 d-block" style={{ fontSize: '4rem' }}></i>
+                      <h5 className="text-muted fw-bold">No hay métodos de pago guardados</h5>
+                    </div>
+                  ) : (
+                    <Row className="g-4">
+                      {metodosPago.map((metodo) => (
+                        <Col key={metodo.id_metodo_pago} md={6}>
+                          <div className="modern-card-container position-relative overflow-hidden rounded-4 shadow-sm p-4 text-white" style={{ background: metodo.tipo_metodo === 'Visa' ? 'linear-gradient(135deg, #1a1a1a 0%, #333 100%)' : 'linear-gradient(135deg, #2563eb 0%, #1e40af 100%)' }}>
+                            <div className="d-flex justify-content-between align-items-start mb-4">
+                              <i className={`bi bi-${metodo.tipo_metodo === 'Visa' ? 'credit-card-2-front' : 'credit-card'} fs-2`}></i>
+                              <Button variant="link" className="text-white p-0 opacity-75 hover-opacity-100" onClick={() => eliminarTarjeta(metodo.id_metodo_pago)} disabled={eliminandoTarjetaId === metodo.id_metodo_pago}>
+                                {eliminandoTarjetaId === metodo.id_metodo_pago ? <Spinner animation="border" size="sm" /> : <i className="bi bi-trash fs-5"></i>}
+                              </Button>
+                            </div>
+                            <div className="fs-4 mb-4 ls-2 fw-bold">**** **** **** {metodo.ultimo4}</div>
+                            <div className="d-flex justify-content-between align-items-end">
+                              <div>
+                                <small className="text-white-50 d-block text-uppercase ls-1" style={{ fontSize: '0.65rem' }}>Tipo de Tarjeta</small>
+                                <span className="fw-bold">{metodo.tipo_metodo || 'Tarjeta'}</span>
+                              </div>
+                              <div className="text-end">
+                                <small className="text-white-50 d-block text-uppercase ls-1" style={{ fontSize: '0.65rem' }}>Guardada</small>
+                                <span className="fw-bold small">{new Date(metodo.creado_en).toLocaleDateString()}</span>
+                              </div>
+                            </div>
+                            <div className="card-shine"></div>
+                          </div>
+                        </Col>
+                      ))}
+                    </Row>
+                  )}
+                </Card>
+              )}
+            </div>
+          </Col>
+        </Row>
+      </Container>
 
       {/* MODAL DETALLE DE ENVÍO PARA COMPRADOR */}
       {showShipmentModal && pedidoDetalle && (
@@ -849,7 +848,7 @@ const Perfil = () => {
           </div>
         </div>
       )}
-    </Container>
+    </div>
   );
 };
 

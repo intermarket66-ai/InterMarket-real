@@ -236,7 +236,40 @@ const Encabezado = () => {
                     </>
                   )}
                   <Nav.Link onClick={() => manejarNavegacion("/mensajes")} className={location.pathname === "/mensajes" ? "active fw-bold" : ""}>Mensajes</Nav.Link>
-                  <Nav.Link onClick={cerrarSesion} className="text-danger ms-2"><i className="bi bi-box-arrow-right"></i></Nav.Link>
+                  
+                  {user && (
+                    <Dropdown align="end" className="ms-3">
+                      <Dropdown.Toggle variant="link" className="p-0 border-0 shadow-none d-flex align-items-center text-decoration-none">
+                        <div className="user-avatar-circle me-2">
+                          {(user.email || "U").charAt(0).toUpperCase()}
+                        </div>
+                        <div className="d-none d-lg-block text-start">
+                          <div className="fw-bold text-dark small leading-tight" style={{fontSize: '0.85rem'}}>{user.email?.split('@')[0]}</div>
+                          <div className="text-muted extra-small" style={{fontSize: '0.7rem'}}>Rol: {role || '...'}</div>
+                        </div>
+                        <i className="bi bi-chevron-down ms-2 small text-muted"></i>
+                      </Dropdown.Toggle>
+
+                      <Dropdown.Menu className="shadow-lg border-0 rounded-lg mt-2">
+                        <div className="px-3 py-2 border-bottom d-lg-none">
+                          <div className="fw-bold text-dark small">{user.email}</div>
+                          <div className="text-muted extra-small">Rol: {role}</div>
+                        </div>
+                        <Dropdown.Item onClick={() => manejarNavegacion("/seleccion-rol")} className="py-2">
+                          <i className="bi bi-arrow-left-right me-2"></i> Cambiar de rol
+                        </Dropdown.Item>
+                        {role === 'comprador' && (
+                          <Dropdown.Item onClick={() => manejarNavegacion("/perfil")} className="py-2">
+                            <i className="bi bi-person me-2"></i> Mi Perfil
+                          </Dropdown.Item>
+                        )}
+                        <Dropdown.Divider />
+                        <Dropdown.Item onClick={cerrarSesion} className="text-danger py-2">
+                          <i className="bi bi-box-arrow-right me-2"></i> Cerrar sesión
+                        </Dropdown.Item>
+                      </Dropdown.Menu>
+                    </Dropdown>
+                  )}
                 </>
              ) : (
                 <Nav.Link onClick={() => manejarNavegacion("/login")} className="fw-bold"><i className="bi bi-person-circle me-2"></i>Acceso</Nav.Link>
@@ -288,6 +321,7 @@ const Encabezado = () => {
                     </>
                   )}
                   <MobileNavLink ruta="/mensajes" icono="chat-left-dots" texto="Mensajes" />
+                  <MobileNavLink ruta="/seleccion-rol" icono="arrow-left-right" texto="Cambiar de rol" />
                   <div className="mt-4">
                       <Nav.Link onClick={cerrarSesion} className="mobile-nav-link mobile-logout">
                         <i className="bi bi-box-arrow-left"></i>

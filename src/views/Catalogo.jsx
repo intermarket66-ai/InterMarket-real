@@ -144,64 +144,94 @@ function Catalogo() {
     return (
         <Container className="pb-5">
             <div className="pt-5 mt-4">
-                <Row className="mb-5 align-items-end">
-                    <Col lg={4} md={12} className="mb-4 mb-lg-0">
-                        <h1 className="display-5 fw-800 mb-2" style={{ color: 'var(--color-primario)' }}>
-                            Descubre
-                        </h1>
-                        <p className="text-muted mb-0">Explora los mejores productos de nuestra comunidad.</p>
+                <Row className="mb-5 align-items-center g-3">
+                    <Col lg={4} md={12}>
+                        <div className="d-flex align-items-center">
+                            <div className="bg-primary bg-opacity-10 p-2 rounded-3 me-3 d-none d-md-block">
+                                <i className="bi bi-shop fs-3 text-primary"></i>
+                            </div>
+                            <div>
+                                <h1 className="display-6 fw-800 mb-0" style={{ color: 'var(--color-primario)' }}>
+                                    Descubre
+                                </h1>
+                                <p className="text-muted mb-0 small">Los mejores productos de nuestra comunidad.</p>
+                            </div>
+                        </div>
                     </Col>
-                    <Col lg={5} md={8} className="mb-3 mb-md-0">
-                        <InputGroup className="unique-input-group shadow-sm">
-                            <InputGroup.Text className="bg-transparent border-0 pe-0">
-                                <i className="bi bi-search text-muted"></i>
+                    <Col lg={5} md={8}>
+                        <InputGroup className="unique-input-group shadow-sm border rounded-pill overflow-hidden bg-white">
+                            <InputGroup.Text className="bg-transparent border-0 ps-4 pe-2">
+                                <i className="bi bi-search text-primary"></i>
                             </InputGroup.Text>
                             <Form.Control
-                                className="bg-transparent border-0 py-3"
+                                className="bg-transparent border-0 py-3 shadow-none"
                                 placeholder="¿Qué estás buscando hoy?"
                                 value={busqueda}
                                 onChange={(e) => setBusqueda(e.target.value)}
                             />
+                            {busqueda && (
+                                <Button 
+                                    variant="link" 
+                                    className="text-muted border-0 pe-4"
+                                    onClick={() => setBusqueda('')}
+                                >
+                                    <i className="bi bi-x-circle-fill"></i>
+                                </Button>
+                            )}
                         </InputGroup>
                     </Col>
-                    <Col lg={3} md={4} className="text-md-end">
+                    <Col lg={3} md={4}>
                         <Button
-                            variant="primary"
-                            className="w-100 py-3 shadow-md fw-bold"
+                            variant={carrito.length > 0 ? "primary" : "outline-secondary"}
+                            className={`w-100 py-3 rounded-pill fw-bold border-2 transition-all d-flex align-items-center justify-content-center ${carrito.length > 0 ? 'shadow-md pulse-button' : ''}`}
                             onClick={() => setMostrarCarrito(true)}
-                            disabled={carrito.length === 0}
                         >
-                            <i className="bi bi-bag-check me-2"></i>
-                            Carrito ({carrito.length})
+                            <div className="position-relative me-2">
+                                <i className="bi bi-cart3 fs-5"></i>
+                                {carrito.length > 0 && (
+                                    <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light" style={{ fontSize: '0.6rem' }}>
+                                        {carrito.length}
+                                    </span>
+                                )}
+                            </div>
+                            {carrito.length > 0 ? 'Ver Mi Carrito' : 'Carrito Vacío'}
                         </Button>
                     </Col>
                 </Row>
 
                 {/* Promotional Banner */}
                 <div
-                    className="mb-5 rounded-xl p-3 p-md-5 d-flex flex-column flex-md-row justify-content-between align-items-center shadow-md position-relative overflow-hidden"
-                    style={{ background: 'linear-gradient(135deg, #0f4c5c 0%, #1a7a8a 100%)', borderRadius: '24px' }}
+                    className="mb-5 rounded-4 p-4 p-md-5 d-flex flex-column flex-md-row justify-content-between align-items-center shadow-lg position-relative overflow-hidden"
+                    style={{ 
+                        background: 'linear-gradient(135deg, #0f4c5c 0%, #1a7a8a 100%)',
+                        border: 'none'
+                    }}
                 >
-                    <div className="position-relative z-1 text-center text-md-start mb-3 mb-md-0">
-                        <Badge bg="accent" className="mb-2 mb-md-3 px-3 py-2 text-uppercase ls-1" style={{ background: 'var(--color-accent)' }}>Destacado</Badge>
-                        <h2 className="text-white fw-800 mb-1 mb-md-2 fs-2 fs-md-1">Semana de Ofertas</h2>
-                        <p className="text-white-50 mb-0 fs-6 fs-md-5">Aprovecha descuentos exclusivos en toda la tienda.</p>
+                    <div className="position-relative z-1 text-center text-md-start mb-4 mb-md-0">
+                        <Badge bg="warning" className="mb-3 px-3 py-2 text-dark text-uppercase fw-bold shadow-sm" style={{ letterSpacing: '1px' }}>
+                            <i className="bi bi-stars me-1"></i> Ofertas Especiales
+                        </Badge>
+                        <h2 className="text-white fw-900 mb-2 display-5">Temporada de Ahorro</h2>
+                        <p className="text-white-50 mb-0 fs-5">Encuentra descuentos increíbles en tus categorías favoritas.</p>
                     </div>
                     <div className="position-relative z-1 w-100 w-md-auto">
                         <Button
-                            variant="light"
-                            className="rounded-pill px-4 py-2 py-md-3 fw-bold shadow-sm w-100 w-md-auto"
+                            variant={mostrarSoloOfertas ? "light" : "outline-light"}
+                            className="rounded-pill px-5 py-3 fw-bold shadow-sm w-100 w-md-auto transition-all border-2"
                             onClick={() => setMostrarSoloOfertas(!mostrarSoloOfertas)}
+                            style={{ minWidth: '200px' }}
                         >
                             {mostrarSoloOfertas ? (
-                                <><i className="bi bi-grid-3x3-gap me-2"></i>Ver todo</>
+                                <><i className="bi bi-grid-fill me-2"></i>Ver Todos</>
                             ) : (
-                                <><i className="bi bi-percent me-2 text-danger"></i>Filtrar Ofertas</>
+                                <><i className="bi bi-percent me-2"></i>Filtrar Ofertas</>
                             )}
                         </Button>
                     </div>
+                    
                     {/* Decorative Elements */}
-                    <div className="position-absolute d-none d-md-block" style={{ width: '300px', height: '300px', background: 'rgba(255,255,255,0.05)', borderRadius: '50%', top: '-100px', right: '-100px' }}></div>
+                    <div className="position-absolute d-none d-md-block" style={{ width: '250px', height: '250px', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', top: '-50px', left: '-50px' }}></div>
+                    <div className="position-absolute d-none d-md-block" style={{ width: '400px', height: '400px', background: 'rgba(255,255,255,0.05)', borderRadius: '50%', bottom: '-150px', right: '-100px' }}></div>
                 </div>
 
                 {cargando ? (
