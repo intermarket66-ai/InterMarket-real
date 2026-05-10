@@ -143,7 +143,11 @@ const Encabezado = () => {
     <Navbar className={`color-navbar ${scrolled ? 'scrolled shadow-sm' : ''}`} expand="md" fixed="top">
       <Container>
         <Navbar.Brand
-          onClick={() => manejarNavegacion(esCatalogo ? "/catalogo" : "/")}
+          onClick={() => {
+            if (role === 'comprador') manejarNavegacion("/catalogo");
+            else if (esCatalogo) manejarNavegacion("/catalogo");
+            else manejarNavegacion("/");
+          }}
           className="d-flex align-items-center"
           style={{ cursor: "pointer" }}
         >
@@ -221,7 +225,9 @@ const Encabezado = () => {
           <Nav className="ms-auto align-items-center">
              {!esLogin && !esCatalogo ? (
                 <>
-                  
+                  {role !== 'comprador' && (
+                    <Nav.Link onClick={() => manejarNavegacion("/")} className={location.pathname === "/" ? "active fw-bold" : ""}>Inicio</Nav.Link>
+                  )}
                   {role === 'vendedor' && (
                     <>
                       <Nav.Link onClick={() => manejarNavegacion("/productos")} className={location.pathname === "/productos" ? "active fw-bold" : ""}>Productos</Nav.Link>

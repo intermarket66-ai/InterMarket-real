@@ -600,6 +600,43 @@ body {
     transform: translateY(-2px);
 }
 
+/* --- HOME PAGES (COMPRADOR / VENDEDOR) --- */
+.hero-section {
+    background: linear-gradient(rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.8)), 
+                url('https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?auto=format&fit=crop&q=80&w=1500') !important;
+    background-size: cover !important;
+    background-position: center !important;
+    border-radius: 0 0 40px 40px;
+}
+
+.category-card-inicio:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-hover-wow) !important;
+    border: 1px solid var(--color-primario) !important;
+}
+
+.quick-action-card {
+    transition: all 0.3s ease;
+    border-radius: 20px !important;
+}
+
+.quick-action-card:hover {
+    transform: scale(1.03);
+    filter: brightness(1.1);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+}
+
+.inicio-comprador .modern-product-card {
+    border-radius: 20px;
+}
+
+.text-truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
 /* --- NAVBAR --- */
 .color-navbar {
     background: var(--color-header) !important;

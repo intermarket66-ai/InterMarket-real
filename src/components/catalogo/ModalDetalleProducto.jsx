@@ -55,7 +55,7 @@ const ModalDetalleProducto = ({ mostrar, setMostrar, producto, agregarAlCarrito 
             const { data: resenasData } = await supabase
                 .from('reseñas_productos')
                 .select('*, perfiles(usuarios(username))')
-                .eq('id_producto', producto.id_producto)
+                .eq('producto_id', producto.id_producto)
                 .order('creado_en', { ascending: false });
             setResenas(resenasData || []);
 
@@ -89,19 +89,34 @@ const ModalDetalleProducto = ({ mostrar, setMostrar, producto, agregarAlCarrito 
     const enviarResenaProducto = async (e) => {
         e.preventDefault();
         if (!nuevaResena.comentario.trim()) return;
+        
+        if (!perfilUsuario?.perfil_id) {
+            alert('No se pudo identificar tu perfil de usuario. Intenta recargar la página.');
+            return;
+        }
+
         try {
             const { error } = await supabase.from('reseñas_productos').insert([{
-                id_producto: producto.id_producto,
+                producto_id: producto.id_producto,
                 comprador_id: perfilUsuario.perfil_id,
                 calificacion: nuevaResena.calificacion,
                 comentario: nuevaResena.comentario
             }]);
-            if (error) throw error;
+            
+            if (error) {
+                if (error.code === '23505') {
+                    alert('Ya has dejado una reseña para este producto.');
+                } else {
+                    throw error;
+                }
+                return;
+            }
+
             setNuevaResena({ calificacion: 5, comentario: '' });
             cargarDetalles();
         } catch (error) {
             console.error('Error al enviar reseña:', error);
-            alert('No se pudo enviar la reseña. Solo puedes calificar una vez.');
+            alert('Error al enviar la reseña: ' + (error.message || 'Error desconocido'));
         }
     };
 

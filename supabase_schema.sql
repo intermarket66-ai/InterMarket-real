@@ -323,9 +323,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.pedidos;
   -- =============================================
   
   -- Tabla para reseñas de productos
-  CREATE TABLE IF NOT EXISTS public.resenas_productos (
+  CREATE TABLE IF NOT EXISTS public.reseñas_productos (
     id_resena UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    id_producto UUID REFERENCES public.productos(id_producto) ON DELETE CASCADE,
+    producto_id UUID REFERENCES public.productos(id_producto) ON DELETE CASCADE,
     comprador_id UUID REFERENCES public.perfiles(perfil_id) ON DELETE CASCADE,
     calificacion INTEGER CHECK (calificacion >= 1 AND calificacion <= 5) NOT NULL,
     comentario TEXT NOT NULL,
@@ -336,7 +336,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.pedidos;
   ALTER TABLE public.reseñas_productos ENABLE ROW LEVEL SECURITY;
   CREATE POLICY "Reseñas visibles para todos" ON public.reseñas_productos FOR SELECT USING (true);
   CREATE POLICY "Usuarios insertan sus reseñas" ON public.reseñas_productos FOR INSERT WITH CHECK (
-    EXISTS (SELECT 1 FROM public.perfiles p WHERE p.id_usuario = auth.uid() AND p.perfil_id = resenas_productos.comprador_id)
+    EXISTS (SELECT 1 FROM public.perfiles p WHERE p.id_usuario = auth.uid() AND p.perfil_id = reseñas_productos.comprador_id)
   );
 
   -- Tabla para calificaciones de tiendas
