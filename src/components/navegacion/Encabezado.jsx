@@ -289,48 +289,49 @@ const Encabezado = () => {
             <Offcanvas.Title id="offcanvasNavbarLabel-expand-md">InterMarket</Offcanvas.Title>
           </Offcanvas.Header>
           <Offcanvas.Body className="d-flex flex-column p-0">
-            {user && (
-                <div className="offcanvas-user-section">
-                    <div className="user-avatar-placeholder">{(user.email || "U").charAt(0).toUpperCase()}</div>
-                    <div>
-                        <div className="fw-bold text-dark small">{user.email || 'Usuario'}</div>
-                        <div className="text-muted" style={{fontSize: '0.75rem'}}>Rol: {role || 'Cargando...'}</div>
-                    </div>
-                </div>
-            )}
-            <Nav className="flex-column">
-              {esLogin ? (
-                 <MobileNavLink ruta="/login" icono="person-circle" texto="Iniciar sesión" />
-              ) : esCatalogo ? (
-                 <MobileNavLink ruta="/catalogo" icono="grid" texto="Ver Catálogo" />
-              ) : (
+            {user ? (
                 <>
-                  <MobileNavLink ruta="/" icono="house" texto="Inicio" />
-                  {role === 'vendedor' && (
-                    <>
-                      <MobileNavLink ruta="/productos" icono="box-seam" texto="Mis Productos" />
-                      <MobileNavLink ruta="/tiendas" icono="shop" texto="Mi Tienda" />
-                      <MobileNavLink ruta="/envios" icono="truck" texto="Envíos" />
-                      <MobileNavLink ruta="/vendedor" icono="graph-up-arrow" texto="Panel de Ventas" />
-                    </>
-                  )}
-                  {role === 'comprador' && (
-                    <>
-                      <MobileNavLink ruta="/catalogo" icono="search" texto="Explorar Productos" />
-                      <MobileNavLink ruta="/perfil" icono="person-badge" texto="Mi Perfil" />
-                    </>
-                  )}
-                  <MobileNavLink ruta="/mensajes" icono="chat-left-dots" texto="Mensajes" />
-                  <MobileNavLink ruta="/seleccion-rol" icono="arrow-left-right" texto="Cambiar de rol" />
-                  <div className="mt-4">
-                      <Nav.Link onClick={cerrarSesion} className="mobile-nav-link mobile-logout">
-                        <i className="bi bi-box-arrow-left"></i>
-                        <span>Cerrar sesión</span>
-                      </Nav.Link>
+                  <div className="offcanvas-user-section">
+                      <div className="user-avatar-placeholder">{(user.email || "U").charAt(0).toUpperCase()}</div>
+                      <div>
+                          <div className="fw-bold text-dark small">{user.email || 'Usuario'}</div>
+                          <div className="text-muted" style={{fontSize: '0.75rem'}}>Rol: {role || 'Cargando...'}</div>
+                      </div>
                   </div>
+                  <Nav className="flex-column">
+                    <MobileNavLink ruta="/" icono="house" texto="Inicio" />
+                    {role === 'vendedor' && (
+                      <>
+                        <MobileNavLink ruta="/productos" icono="box-seam" texto="Mis Productos" />
+                        <MobileNavLink ruta="/tiendas" icono="shop" texto="Mi Tienda" />
+                        <MobileNavLink ruta="/envios" icono="truck" texto="Envíos" />
+                        <MobileNavLink ruta="/vendedor" icono="graph-up-arrow" texto="Panel de Ventas" />
+                      </>
+                    )}
+                    {role === 'comprador' && (
+                      <>
+                        <MobileNavLink ruta="/catalogo" icono="search" texto="Explorar Productos" />
+                        <MobileNavLink ruta="/perfil" icono="person-badge" texto="Mi Perfil" />
+                      </>
+                    )}
+                    <MobileNavLink ruta="/mensajes" icono="chat-left-dots" texto="Mensajes" />
+                    <MobileNavLink ruta="/seleccion-rol" icono="arrow-left-right" texto="Cambiar de rol" />
+                    <div className="mt-4">
+                        <Nav.Link onClick={cerrarSesion} className="mobile-nav-link mobile-logout">
+                          <i className="bi bi-box-arrow-left"></i>
+                          <span>Cerrar sesión</span>
+                        </Nav.Link>
+                    </div>
+                  </Nav>
                 </>
-              )}
-            </Nav>
+            ) : (
+              <Nav className="flex-column">
+                <MobileNavLink ruta="/login" icono="person-circle" texto="Iniciar sesión" />
+                {location.pathname !== "/catalogo" && (
+                  <MobileNavLink ruta="/catalogo" icono="grid" texto="Ver Catálogo" />
+                )}
+              </Nav>
+            )}
           </Offcanvas.Body>
         </Navbar.Offcanvas>
       </Container>
