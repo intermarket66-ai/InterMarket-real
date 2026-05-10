@@ -146,13 +146,28 @@ const ModalRegistroProducto = ({
                         </Col>
                     </Row>
 
-                    {nuevoProducto.url_imagenes && (
-                        <div className="text-center mb-3">
-                            <img
-                                src={nuevoProducto.url_imagenes}
-                                alt="Vista previa"
-                                style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain' }}
-                            />
+                    {nuevoProducto.archivos_imagen && nuevoProducto.archivos_imagen.length > 0 && (
+                        <div className="mb-3">
+                            <Form.Label className="small text-muted">Vista previa de imágenes seleccionadas:</Form.Label>
+                            <div className="d-flex flex-wrap gap-2 justify-content-center p-2 border rounded bg-light">
+                                {Array.from(nuevoProducto.archivos_imagen).map((file, idx) => (
+                                    <div key={idx} className="position-relative">
+                                        <img
+                                            src={URL.createObjectURL(file)}
+                                            alt={`Vista previa ${idx + 1}`}
+                                            style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px', border: '2px solid white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
+                                            onLoad={(e) => URL.revokeObjectURL(e.target.src)}
+                                        />
+                                        <Badge 
+                                            bg="dark" 
+                                            className="position-absolute top-0 end-0 m-1 opacity-75" 
+                                            style={{ fontSize: '0.6rem' }}
+                                        >
+                                            {idx + 1}
+                                        </Badge>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
                 </Form>

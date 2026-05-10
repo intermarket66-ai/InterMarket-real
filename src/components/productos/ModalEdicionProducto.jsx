@@ -159,6 +159,24 @@ const ModalEdicionProducto = ({
                         </Col>
                     </Row>
 
+                    {productoEditar.archivos_imagen && productoEditar.archivos_imagen.length > 0 && (
+                        <div className="mb-3">
+                            <Form.Label className="small text-muted">Nuevas imágenes seleccionadas:</Form.Label>
+                            <div className="d-flex flex-wrap gap-2 justify-content-center p-2 border rounded bg-light">
+                                {Array.from(productoEditar.archivos_imagen).map((file, idx) => (
+                                    <div key={idx} className="position-relative">
+                                        <img
+                                            src={URL.createObjectURL(file)}
+                                            alt={`Nueva ${idx + 1}`}
+                                            style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px', border: '2px solid white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
+                                            onLoad={(e) => URL.revokeObjectURL(e.target.src)}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     {productoEditar.url_imagenes && productoEditar.url_imagenes.length > 0 && (
                         <div className="text-center mb-3">
                             <p className="small text-muted mb-2">Imágenes actuales:</p>

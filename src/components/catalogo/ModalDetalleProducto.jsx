@@ -189,7 +189,12 @@ const ModalDetalleProducto = ({ mostrar, setMostrar, producto, agregarAlCarrito 
                                     style={{ height: '250px', backgroundColor: '#f8f9fa' }}
                                 >
                                     {producto.imagen_url && producto.imagen_url.length > 1 ? (
-                                        <Carousel variant="dark" style={{ height: '100%' }}>
+                                        <Carousel 
+                                            variant="dark" 
+                                            style={{ height: '100%' }}
+                                            interval={3000}
+                                            pause="hover"
+                                        >
                                             {producto.imagen_url.map((url, idx) => (
                                                 <Carousel.Item key={idx} style={{ height: '250px' }}>
                                                     <img

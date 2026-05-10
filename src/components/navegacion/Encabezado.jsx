@@ -221,7 +221,7 @@ const Encabezado = () => {
           <Nav className="ms-auto align-items-center">
              {!esLogin && !esCatalogo ? (
                 <>
-                  <Nav.Link onClick={() => manejarNavegacion("/")} className={location.pathname === "/" ? "active fw-bold" : ""}>Inicio</Nav.Link>
+                  
                   {role === 'vendedor' && (
                     <>
                       <Nav.Link onClick={() => manejarNavegacion("/productos")} className={location.pathname === "/productos" ? "active fw-bold" : ""}>Productos</Nav.Link>
@@ -232,7 +232,7 @@ const Encabezado = () => {
                   {role === 'comprador' && (
                     <>
                       <Nav.Link onClick={() => manejarNavegacion("/catalogo")} className={location.pathname === "/catalogo" ? "active fw-bold" : ""}>Catálogo</Nav.Link>
-                      <Nav.Link onClick={() => manejarNavegacion("/perfil")} className={location.pathname === "/perfil" ? "active fw-bold" : ""}>Perfil</Nav.Link>
+                    
                     </>
                   )}
                   <Nav.Link onClick={() => manejarNavegacion("/mensajes")} className={location.pathname === "/mensajes" ? "active fw-bold" : ""}>Mensajes</Nav.Link>

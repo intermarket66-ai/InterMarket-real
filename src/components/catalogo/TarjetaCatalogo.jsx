@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Badge, Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Card, Badge, Button, OverlayTrigger, Tooltip, Carousel } from 'react-bootstrap';
 
 const TarjetaCatalogo = ({ 
     producto, 
@@ -13,6 +13,8 @@ const TarjetaCatalogo = ({
         ? Math.round((1 - producto.precio_venta / producto.precio_original) * 100) 
         : 0;
 
+    const tieneMultiplesImagenes = Array.isArray(producto.imagen_url) && producto.imagen_url.length > 1;
+
     return (
         <Card className="h-100 border-0 shadow-sm modern-product-card bg-white overflow-hidden">
             {/* Contenedor de Imagen con Efectos */}
@@ -21,13 +23,35 @@ const TarjetaCatalogo = ({
                     className="modern-card-img-container"
                     onClick={() => abrirModalDetalles(producto)}
                 >
-                    <Card.Img
-                        variant="top"
-                        src={producto.imagen_url?.[0] || 'https://via.placeholder.com/400?text=Sin+Imagen'}
-                        alt={producto.nombre_producto}
-                        className="modern-card-img"
-                        onError={(e) => e.target.src = 'https://via.placeholder.com/400?text=Error'}
-                    />
+                    {tieneMultiplesImagenes ? (
+                        <Carousel 
+                            fade 
+                            indicators={false} 
+                            controls={false} 
+                            interval={4000} 
+                            pause={false}
+                            className="modern-card-carousel"
+                        >
+                            {producto.imagen_url.map((url, idx) => (
+                                <Carousel.Item key={idx}>
+                                    <img
+                                        src={url}
+                                        alt={`${producto.nombre_producto} ${idx + 1}`}
+                                        className="modern-card-img"
+                                        onError={(e) => e.target.src = 'https://via.placeholder.com/400?text=Error'}
+                                    />
+                                </Carousel.Item>
+                            ))}
+                        </Carousel>
+                    ) : (
+                        <Card.Img
+                            variant="top"
+                            src={producto.imagen_url?.[0] || 'https://via.placeholder.com/400?text=Sin+Imagen'}
+                            alt={producto.nombre_producto}
+                            className="modern-card-img"
+                            onError={(e) => e.target.src = 'https://via.placeholder.com/400?text=Error'}
+                        />
+                    )}
                     
                     {/* Overlay al hacer hover (opcional, para oscurecer un poco) */}
                     <div className="modern-card-overlay"></div>
