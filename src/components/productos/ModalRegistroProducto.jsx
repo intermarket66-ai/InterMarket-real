@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Modal, Form, Button, Row, Col } from "react-bootstrap";
+import { Modal, Form, Button, Row, Col, Badge } from "react-bootstrap";
 
 const ModalRegistroProducto = ({
     mostrarModal,

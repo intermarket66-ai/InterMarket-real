@@ -35,6 +35,7 @@ const Productos = () => {
     const [textoBusqueda, setTextoBusqueda] = useState("");
     const [registrosPorPagina, establecerRegistrosPorPagina] = useState(5);
     const [paginaActual, establecerPaginaActual] = useState(1);
+    const [procesandoIA, setProcesandoIA] = useState(false);
 
     const [nuevoProducto, setNuevoProducto] = useState({
         nombre_producto: '',
@@ -132,16 +133,145 @@ const Productos = () => {
 
     const parsearNumero = (valor) => Number.parseFloat(String(valor).replace(",", "."));
 
+    // --- FUNCIÓN DE ANÁLISIS DE CALIDAD GRATUITA (BRILLO) ---
+    const analizarCalidadImagen = (archivo) => {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(archivo);
+            reader.onload = (e) => {
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = 100;
+                    canvas.height = 100;
+                    ctx.drawImage(img, 0, 0, 100, 100);
+                    
+                    const imageData = ctx.getImageData(0, 0, 100, 100);
+                    const data = imageData.data;
+                    let brilloTotal = 0;
+                    let pixelesOscuros = 0;
+
+                    for (let i = 0; i < data.length; i += 4) {
+                        const brilloPixel = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                        brilloTotal += brilloPixel;
+                        if (brilloPixel < 60) pixelesOscuros++;
+                    }
+                    
+                    const promedio = brilloTotal / (data.length / 4);
+                    const porcentajeOscuro = (pixelesOscuros / (data.length / 4)) * 100;
+                    
+                    // Umbral más estricto: promedio bajo O demasiados píxeles oscuros (contraluz)
+                    resolve({
+                        esOscura: promedio < 65 || porcentajeOscuro > 60,
+                        brillo: promedio,
+                        porcentajeOscuro
+                    });
+                };
+            };
+        });
+    };
+
+    const procesarPixelesYFinalizar = (ctx, canvas, width, height, nombreArchivo, resolve) => {
+        const imageData = ctx.getImageData(0, 0, width, height);
+        const data = imageData.data;
+        const contrast = 25;
+        const brightness = 10;
+        const factor = (259 * (128 + contrast)) / (255 * (259 - contrast));
+        
+        for (let i = 0; i < data.length; i += 4) {
+            data[i] = factor * (data[i] - 128) + 128 + brightness;
+            data[i+1] = factor * (data[i+1] - 128) + 128 + brightness;
+            data[i+2] = factor * (data[i+2] - 128) + 128 + brightness;
+        }
+        ctx.putImageData(imageData, 0, 0);
+
+        // Cambiamos a PNG para mantener la transparencia si es necesario, 
+        // o JPEG con calidad máxima para imágenes de Google
+        const extension = nombreArchivo.split('.').pop().toLowerCase();
+        const mimeType = (extension === 'png') ? 'image/png' : 'image/jpeg';
+
+        canvas.toBlob((blob) => {
+            // Aseguramos que el nombre de archivo termine en .jpg si lo convertimos para máxima compatibilidad
+            const nombreFinal = mimeType === 'image/jpeg' ? nombreArchivo.replace(/\.[^/.]+$/, "") + ".jpg" : nombreArchivo;
+            resolve(new File([blob], nombreFinal, { type: mimeType, lastModified: Date.now() }));
+        }, mimeType, 1.0);
+    };
+
+    
+
     // Ya no usamos Base64, subiremos directamente el archivo a Supabase Storage
     const subirImagenASupabase = async (archivo, bucketName) => {
         try {
-            const fileExt = archivo.name.split('.').pop();
+            let archivoAProcesar = archivo;
+
+            // --- INTEGRACIÓN REMOVE.BG (OPCIONAL) ---
+            const REMOVE_BG_API_KEY = 'A5oKmc4xcBmtcjtBzAvx7XeN';
+            if (REMOVE_BG_API_KEY && REMOVE_BG_API_KEY !== 'TU_API_KEY_AQUI') {
+                setProcesandoIA(true);
+                try {
+                    const formData = new FormData();
+                    formData.append('image_file', archivo);
+                    formData.append('size', 'auto');
+
+                    const response = await fetch('https://api.remove.bg/v1.0/removebg', {
+                        method: 'POST',
+                        headers: { 'X-Api-Key': REMOVE_BG_API_KEY },
+                        body: formData
+                    });
+
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        archivoAProcesar = new File([blob], archivo.name, { type: 'image/png' });
+                    } else {
+                        console.error("Error Remove.bg:", await response.text());
+                    }
+                } catch (err) {
+                    console.error("Error procesando IA:", err);
+                } finally {
+                    setProcesandoIA(false);
+                }
+            }
+
+            // --- INTEGRACIÓN DEEPAI (MEJORA DE CALIDAD / SUPER RESOLUTION) ---
+            const DEEPAI_API_KEY = 'TU_API_KEY_AQUI';
+            if (DEEPAI_API_KEY && DEEPAI_API_KEY !== 'TU_API_KEY_AQUI') {
+                setProcesandoIA(true);
+                try {
+                    const formDataIA = new FormData();
+                    formDataIA.append('image', archivoAProcesar);
+
+                    const responseIA = await fetch('https://api.deepai.org/api/torch-srgan', {
+                        method: 'POST',
+                        headers: { 'api-key': DEEPAI_API_KEY },
+                        body: formDataIA
+                    });
+
+                    if (responseIA.ok) {
+                        const dataIA = await responseIA.json();
+                        if (dataIA.output_url) {
+                            const imgRes = await fetch(dataIA.output_url);
+                            const blob = await imgRes.blob();
+                            archivoAProcesar = new File([blob], archivo.name, { type: 'image/jpeg' });
+                        }
+                    } else {
+                        console.error("Error DeepAI:", await responseIA.text());
+                    }
+                } catch (err) {
+                    console.error("Error mejorando calidad:", err);
+                } finally {
+                    setProcesandoIA(false);
+                }
+            }
+
+            const fileExt = archivoAProcesar.name.split('.').pop();
             const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
             const filePath = `${fileName}`;
-            
-            const { error: uploadError } = await supabase.storage.from(bucketName).upload(filePath, archivo);
+
+            const { error: uploadError } = await supabase.storage.from(bucketName).upload(filePath, archivoAProcesar);
             if (uploadError) throw uploadError;
-            
+
             const { data } = supabase.storage.from(bucketName).getPublicUrl(filePath);
             return data.publicUrl;
         } catch (error) {
@@ -150,16 +280,82 @@ const Productos = () => {
         }
     };
 
-    const manejoCambioArchivo = (e) => {
+    const manejoCambioArchivo = async (e) => {
         const archivos = Array.from(e.target.files || []);
         if (archivos.length === 0) return;
-        setNuevoProducto((prev) => ({ ...prev, archivos_imagen: archivos }));
+
+        // Validaciones de calidad y compatibilidad
+        const archivosValidos = [];
+        for (const archivo of archivos) {
+            // 1. Validar tamaño (Mínimo 1KB para permitir cualquier imagen de la web, Máximo 10MB)
+            if (archivo.size < 1024) {
+                setToast({ mostrar: true, mensaje: `La imagen "${archivo.name}" es demasiado pequeña o está corrupta.`, tipo: "advertencia" });
+                continue;
+            }
+            if (archivo.size > 10 * 1024 * 1024) {
+                setToast({ mostrar: true, mensaje: `La imagen "${archivo.name}" supera el límite de 10MB.`, tipo: "advertencia" });
+                continue;
+            }
+            // 2. Validar tipo (Aceptamos formatos comunes)
+            const tiposPermitidos = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'];
+            const extension = archivo.name.split('.').pop().toLowerCase();
+            const extensionesValidas = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif', 'jfif', 'pjpeg', 'pjp'];
+
+            if (!tiposPermitidos.includes(archivo.type) && !extensionesValidas.includes(extension)) {
+                setToast({ mostrar: true, mensaje: `El archivo "${archivo.name}" no es una imagen compatible.`, tipo: "advertencia" });
+                continue;
+            }
+
+            // 3. Validar Brillo/Luz (BLOQUEO ESTRICTO)
+            const calidad = await analizarCalidadImagen(archivo);
+            if (calidad.esOscura) {
+                setToast({ 
+                    mostrar: true, 
+                    mensaje: `La imagen "${archivo.name}" es demasiado oscura o tiene mal contraste. Por favor, usa una foto con mejor iluminación.`, 
+                    tipo: "error" 
+                });
+                continue; // SALTAR ESTA IMAGEN (BLOQUEO)
+            }
+
+            archivosValidos.push(archivo);
+        }
+
+        if (archivosValidos.length > 0) {
+            setNuevoProducto((prev) => ({ ...prev, archivos_imagen: archivosValidos }));
+        }
     };
 
-    const manejoCambioArchivoActualizar = (e) => {
+    const manejoCambioArchivoActualizar = async (e) => {
         const archivos = Array.from(e.target.files || []);
         if (archivos.length === 0) return;
-        setProductoEditar((prev) => ({ ...prev, archivos_imagen: archivos }));
+
+        const archivosValidos = [];
+        for (const archivo of archivos) {
+            if (archivo.size < 1024) continue;
+            if (archivo.size > 10 * 1024 * 1024) continue;
+            
+            const tiposPermitidos = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'];
+            const extension = archivo.name.split('.').pop().toLowerCase();
+            const extensionesValidas = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif', 'jfif', 'pjpeg', 'pjp'];
+            
+            if (tiposPermitidos.includes(archivo.type) || extensionesValidas.includes(extension)) {
+                // Validar Brillo también al actualizar (BLOQUEO ESTRICTO)
+                const calidad = await analizarCalidadImagen(archivo);
+                if (calidad.esOscura) {
+                    setToast({ 
+                        mostrar: true, 
+                        mensaje: `La nueva imagen es demasiado oscura. Por favor, selecciona una foto más clara.`, 
+                        tipo: "error" 
+                    });
+                    continue; // SALTAR ESTA IMAGEN (BLOQUEO)
+                }
+                archivosValidos.push(archivo);
+            }
+        }
+
+        if (archivosValidos.length > 0) {
+            setProductoEditar((prev) => ({ ...prev, archivos_imagen: archivosValidos }));
+        }
     };
 
     const abrirModalEdicion = (producto) => {
@@ -479,6 +675,13 @@ const Productos = () => {
                 tipo={toast.tipo}
                 onCerrar={() => setToast({ ...toast, mostrar: false })}
             />
+
+            {procesandoIA && (
+                <Alert variant="info" className="text-center mb-3 border-0 shadow-sm rounded-pill py-2">
+                    <Spinner animation="grow" size="sm" variant="info" className="me-2" />
+                    <span className="small fw-bold">Optimizando imagen con IA (Borrando fondo y mejorando nitidez)...</span>
+                </Alert>
+            )}
 
             {cargando ? (
                 <div className="text-center my-5">
