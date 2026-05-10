@@ -21,8 +21,9 @@ function RutaProtegida({ children, rolesPermitidos = [] }) {
   }
 
   // Si está autenticado pero no ha elegido rol, forzar la selección de rol
-  // (A menos que ya estemos en esa página)
-  if (!role && location.pathname !== '/seleccion-rol') {
+  // Permitimos la ruta de suscripción para que el usuario pueda completar su registro como vendedor
+  const rutasPermitidasSinRol = ['/seleccion-rol', '/suscripcion'];
+  if (!role && !rutasPermitidasSinRol.includes(location.pathname)) {
     return <Navigate to="/seleccion-rol" replace />;
   }
 

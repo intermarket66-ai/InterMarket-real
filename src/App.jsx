@@ -16,6 +16,7 @@ import VistaRol from "./views/vista_rol";
 import AdminInicio from "./views/AdminInicio";
 import Perfil from "./views/Perfil";
 import Mensajes from "./views/Mensajes";
+import Suscripcion from "./views/Suscripcion";
 import CheckoutSuccess from "./views/CheckoutSuccess";
 import CheckoutCancel from "./views/CheckoutCancel";
 import GestionEnvios from "./views/GestionEnvios";
@@ -55,6 +56,7 @@ const AppLayout = () => {
           
           {/* Selección de vista/rol */}
           <Route path="/seleccion-rol" element={<RutaProtegida><VistaRol /></RutaProtegida>} />
+          <Route path="/suscripcion" element={<RutaProtegida><Suscripcion /></RutaProtegida>} />
           
           {/* Rutas compartidas o públicas */}
           <Route path="/catalogo" element={<Catalogo />} />

@@ -1,16 +1,47 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { Row, Col, Container } from "react-bootstrap";
+import { supabase } from "../database/supabaseconfig";
+import { Row, Col, Container, Spinner } from "react-bootstrap";
 import "../App.css";
 
 const VistaRol = () => {
   const navigate = useNavigate();
-  const { changeRole, signOut } = useAuth();
+  const { user, changeRole, signOut } = useAuth();
+  const [verificando, setVerificando] = useState(false);
 
-  const handleRoleSelection = (rol) => {
-    changeRole(rol);
-    navigate(rol === "vendedor" ? "/vendedor" : "/catalogo");
+  const handleRoleSelection = async (rol) => {
+    if (rol === "vendedor") {
+      setVerificando(true);
+      try {
+        // Verificar si ya tiene el rol de vendedor en la BD
+        const { data, error } = await supabase
+          .from("usuarios")
+          .select("rol")
+          .eq("id_usuario", user.id)
+          .single();
+
+        if (error) throw error;
+
+        if (data.rol === "vendedor") {
+          // Si ya es vendedor, simplemente cambiamos el rol activo y navegamos
+          changeRole("vendedor");
+          navigate("/vendedor");
+        } else {
+          // Si no es vendedor, enviarlo a suscribirse
+          navigate("/suscripcion");
+        }
+      } catch (err) {
+        console.error("Error al verificar rol:", err);
+        // Por defecto, si hay error, enviamos a suscripción para estar seguros
+        navigate("/suscripcion");
+      } finally {
+        setVerificando(false);
+      }
+    } else {
+      changeRole(rol);
+      navigate("/catalogo");
+    }
   };
 
   const cerrarSesion = async () => {
@@ -31,8 +62,8 @@ const VistaRol = () => {
         <Row className="justify-content-center g-4">
           <Col md={6} lg={5}>
             <div
-              className="rol-card-wow h-100"
-              onClick={() => handleRoleSelection("comprador")}
+              className={`rol-card-wow h-100 ${verificando ? 'pe-none opacity-50' : ''}`}
+              onClick={() => !verificando && handleRoleSelection("comprador")}
             >
               <div className="rol-icon-wow">
                 <i className="bi bi-cart-check" />
@@ -46,11 +77,15 @@ const VistaRol = () => {
 
           <Col md={6} lg={5}>
             <div
-              className="rol-card-wow h-100"
-              onClick={() => handleRoleSelection("vendedor")}
+              className={`rol-card-wow h-100 ${verificando ? 'pe-none opacity-50' : ''}`}
+              onClick={() => !verificando && handleRoleSelection("vendedor")}
             >
               <div className="rol-icon-wow">
-                <i className="bi bi-graph-up-arrow" />
+                {verificando ? (
+                  <Spinner animation="border" variant="primary" />
+                ) : (
+                  <i className="bi bi-graph-up-arrow" />
+                )}
               </div>
               <h2 className="rol-title-card">Vendedor</h2>
               <p className="rol-desc-card">

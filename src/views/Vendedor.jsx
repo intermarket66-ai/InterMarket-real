@@ -1,31 +1,55 @@
 import React, { useState, useEffect } from "react";
-import { Container, Row, Col, Button, Spinner, Table, Badge, Card } from "react-bootstrap";
+import { Container, Row, Col, Button, Card } from "react-bootstrap";
 import { supabase } from "../database/supabaseconfig";
 import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
+
+// Componentes
+import StatsVendedor from "../components/vendedor/StatsVendedor";
+import TablaPedidosVendedor from "../components/vendedor/TablaPedidosVendedor";
+import ModalSuscripcionVendedor from "../components/vendedor/ModalSuscripcionVendedor";
 
 const Vendedor = () => {
-  const { user } = useAuth();
+  const { user, changeRole } = useAuth();
+  const navigate = useNavigate();
   const [pedidos, setPedidos] = useState([]);
   const [miPerfilId, setMiPerfilId] = useState(null);
   const [cargando, setCargando] = useState(true);
+  
+  // Estados para la suscripción
+  const [suscripcion, setSuscripcion] = useState(null);
+  const [showSubModal, setShowSubModal] = useState(false);
+  const [cancelando, setCancelando] = useState(false);
 
-  const cargarPedidos = async () => {
+  const cargarDatos = async () => {
     if (!user) return;
     try {
       setCargando(true);
       
-      // 1. Obtener la tienda del vendedor y su perfil_id
-      const { data: perfil } = await supabase
-        .from('perfiles')
-        .select('perfil_id, id_tienda')
-        .eq('id_usuario', user.id)
-        .maybeSingle();
+      // 1. Obtener la tienda del vendedor, su perfil_id y su suscripción
+      const [perfilRes, subRes] = await Promise.all([
+        supabase
+          .from('perfiles')
+          .select('perfil_id, id_tienda')
+          .eq('id_usuario', user.id)
+          .maybeSingle(),
+        supabase
+          .from('suscripciones')
+          .select('*')
+          .eq('id_usuario', user.id)
+          .eq('estado', 'activo')
+          .maybeSingle()
+      ]);
+
+      const perfil = perfilRes.data;
+      setSuscripcion(subRes.data);
         
       if (!perfil?.id_tienda) {
         setPedidos([]);
+        setCargando(false);
         return;
       }
-      setMiPerfilId(perfil.perfil_id); // Guardar perfil_id para notificaciones
+      setMiPerfilId(perfil.perfil_id);
       
       // 2. Obtener los pedidos asociados a los productos de su tienda
       const { data, error } = await supabase
@@ -46,14 +70,14 @@ const Vendedor = () => {
       if (error) throw error;
       setPedidos(data || []);
     } catch (err) {
-      console.error("Error al cargar pedidos:", err.message);
+      console.error("Error al cargar datos:", err.message);
     } finally {
       setCargando(false);
     }
   };
 
   useEffect(() => {
-    cargarPedidos();
+    cargarDatos();
     
     if (user) {
       // Suscripción a cambios en la tabla pedidos
@@ -67,8 +91,7 @@ const Vendedor = () => {
             table: 'pedidos'
           },
           (payload) => {
-            console.log('Cambio en pedidos:', payload);
-            cargarPedidos();
+            cargarDatos();
           }
         )
         .subscribe();
@@ -78,6 +101,38 @@ const Vendedor = () => {
       }
     }
   }, [user]);
+
+  const terminarSuscripcion = async () => {
+    if (!suscripcion) return;
+    setCancelando(true);
+    try {
+      // 1. Marcar suscripción como cancelada
+      const { error: subError } = await supabase
+        .from('suscripciones')
+        .update({ estado: 'cancelado' })
+        .eq('id_suscripcion', suscripcion.id_suscripcion);
+
+      if (subError) throw subError;
+
+      // 2. Cambiar el rol del usuario a 'comprador'
+      const { error: roleError } = await supabase
+        .from('usuarios')
+        .update({ rol: 'comprador' })
+        .eq('id_usuario', user.id);
+
+      if (roleError) throw roleError;
+
+      // 3. Actualizar contexto y redirigir
+      changeRole('comprador');
+      navigate('/seleccion-rol');
+    } catch (err) {
+      console.error("Error al cancelar suscripción:", err);
+      alert("No se pudo cancelar la suscripción. Intenta de nuevo.");
+    } finally {
+      setCancelando(false);
+      setShowSubModal(false);
+    }
+  };
 
   const cambiarEstadoPedido = async (id_pedido, nuevoEstadoId) => {
     try {
@@ -156,190 +211,47 @@ const Vendedor = () => {
       <br />
       <br />
       <br />
-      <Row className="mb-4">
-        <Col>
-          <h2 className="text-primary"><i className="bi bi-speedometer2 me-2"></i>Dashboard Vendedor</h2>
+      <Row className="mb-4 align-items-center">
+        <Col xs={8} md={9}>
+          <h2 className="text-primary mb-0"><i className="bi bi-speedometer2 me-2"></i>Dashboard Vendedor</h2>
+        </Col>
+        <Col xs={4} md={3} className="text-end">
+          {suscripcion && (
+            <Button 
+              variant="outline-primary" 
+              size="sm" 
+              className="rounded-pill px-3 shadow-sm"
+              onClick={() => setShowSubModal(true)}
+            >
+              <i className="bi bi-gem me-1"></i>
+              <span>Mi Plan</span>
+            </Button>
+          )}
         </Col>
       </Row>
 
-      <Row className="mb-4">
-        <Col md={4}>
-          <Card className="text-center shadow-sm border-0">
-            <Card.Body>
-              <h5 className="text-muted">Total Pedidos</h5>
-              <h2 className="fw-bold">{pedidos.length}</h2>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col md={4}>
-          <Card className="text-center shadow-sm border-0">
-            <Card.Body>
-              <h5 className="text-muted">Pedidos Pendientes</h5>
-              <h2 className="fw-bold text-warning">
-                {pedidos.filter(p => p.id_estado === 1).length}
-              </h2>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col md={4}>
-          <Card className="text-center shadow-sm border-0 bg-primary text-white">
-            <Card.Body>
-              <h5 className="text-white-50">Ingresos Potenciales</h5>
-              <h2 className="fw-bold">
-                ${pedidos.filter(p => p.id_estado !== 3).reduce((acc, p) => acc + Number(p.precio_unitario), 0).toFixed(2)}
-              </h2>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
+      <StatsVendedor pedidos={pedidos} />
 
       <Card className="shadow-sm border-0 mb-5">
         <Card.Header className="bg-white border-bottom-0 pt-4 pb-0">
           <h4 className="m-0"><i className="bi bi-list-check me-2"></i>Gestión de Pedidos</h4>
         </Card.Header>
         <Card.Body>
-          {cargando ? (
-            <div className="text-center p-5">
-              <Spinner animation="border" variant="primary" />
-              <p className="mt-3 text-muted">Cargando pedidos...</p>
-            </div>
-          ) : pedidos.length === 0 ? (
-            <div className="text-center p-5 bg-light rounded">
-              <i className="bi bi-inbox text-muted" style={{ fontSize: '3rem' }}></i>
-              <p className="mt-3 text-muted">Aún no tienes pedidos asociados a tu tienda.</p>
-            </div>
-          ) : (
-            <>
-              {/* VISTA MÓVIL (TARJETAS) */}
-              <div className="d-lg-none">
-                <Row xs={1} md={2} className="g-3">
-                  {pedidos.map((pedido) => (
-                    <Col key={pedido.id_pedido}>
-                      <Card className="h-100 shadow-sm border-0">
-                        <Card.Body>
-                          <div className="d-flex justify-content-between align-items-center mb-2">
-                            <small className="text-muted">ID: {pedido.id_pedido.split('-')[0]}</small>
-                            <Badge bg={badgeColor(pedido.id_estado)} className="px-2 py-1 text-uppercase">
-                              {getEstadoTexto(pedido.id_estado)}
-                            </Badge>
-                          </div>
-                          <Card.Title className="h5 mb-1">{pedido.productos?.nombre_producto}</Card.Title>
-                          <Card.Subtitle className="mb-2 text-muted">
-                            <i className="bi bi-person me-1"></i> {pedido.perfiles?.usuarios?.username || 'Usuario'}
-                          </Card.Subtitle>
-                          <hr className="my-2" />
-                          <div className="d-flex justify-content-between mb-2">
-                            <span>Fecha:</span>
-                            <strong>{new Date(pedido.creado_en).toLocaleDateString()}</strong>
-                          </div>
-                          <div className="d-flex justify-content-between mb-3">
-                            <span>Monto:</span>
-                            <strong className="text-success">${Number(pedido.precio_unitario).toFixed(2)}</strong>
-                          </div>
-                          <div className="d-flex justify-content-end gap-2">
-                            {pedido.id_estado === 1 && (
-                              <>
-                                <Button 
-                                  variant="outline-success" 
-                                  size="sm" 
-                                  onClick={() => cambiarEstadoPedido(pedido.id_pedido, 2)}
-                                >
-                                  <i className="bi bi-check-circle me-1"></i> Aceptar
-                                </Button>
-                                <Button 
-                                  variant="outline-danger" 
-                                  size="sm"
-                                  onClick={() => cambiarEstadoPedido(pedido.id_pedido, 3)}
-                                >
-                                  <i className="bi bi-x-circle me-1"></i> Rechazar
-                                </Button>
-                              </>
-                            )}
-                            {pedido.id_estado === 2 && (
-                              <Button 
-                                variant="outline-info" 
-                                size="sm" 
-                                onClick={() => cambiarEstadoPedido(pedido.id_pedido, 4)}
-                              >
-                                <i className="bi bi-box-seam me-1"></i> Entregar
-                              </Button>
-                            )}
-                          </div>
-                        </Card.Body>
-                      </Card>
-                    </Col>
-                  ))}
-                </Row>
-              </div>
-
-              {/* VISTA ESCRITORIO (TABLA) */}
-              <div className="d-none d-lg-block">
-                <Table responsive hover className="align-middle">
-                  <thead className="table-light">
-                    <tr>
-                      <th>ID Pedido</th>
-                      <th>Fecha</th>
-                      <th>Producto</th>
-                      <th>Comprador</th>
-                      <th>Monto</th>
-                      <th>Estado</th>
-                      <th className="text-center">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pedidos.map((pedido) => (
-                      <tr key={pedido.id_pedido}>
-                        <td><small className="text-muted">{pedido.id_pedido.split('-')[0]}</small></td>
-                        <td>{new Date(pedido.creado_en).toLocaleDateString()}</td>
-                        <td>{pedido.productos?.nombre_producto}</td>
-                        <td>{pedido.perfiles?.usuarios?.username || 'Usuario'}</td>
-                        <td className="fw-bold text-success">${Number(pedido.precio_unitario).toFixed(2)}</td>
-                        <td>
-                          <Badge bg={badgeColor(pedido.id_estado)} className="px-3 py-2 text-uppercase">
-                            {getEstadoTexto(pedido.id_estado)}
-                          </Badge>
-                        </td>
-                        <td className="text-center">
-                          {pedido.id_estado === 1 && (
-                            <>
-                              <Button 
-                                variant="success" 
-                                size="sm" 
-                                className="me-2 rounded-pill px-3"
-                                onClick={() => cambiarEstadoPedido(pedido.id_pedido, 2)}
-                              >
-                                <i className="bi bi-check-circle me-1"></i> Aceptar
-                              </Button>
-                              <Button 
-                                variant="danger" 
-                                size="sm"
-                                className="rounded-pill px-3"
-                                onClick={() => cambiarEstadoPedido(pedido.id_pedido, 3)}
-                              >
-                                <i className="bi bi-x-circle me-1"></i> Rechazar
-                              </Button>
-                            </>
-                          )}
-                          {pedido.id_estado === 2 && (
-                            <Button 
-                              variant="info" 
-                              size="sm" 
-                              className="rounded-pill px-3 text-white"
-                              onClick={() => cambiarEstadoPedido(pedido.id_pedido, 4)}
-                            >
-                              <i className="bi bi-box-seam me-1"></i> Marcar Entregado
-                            </Button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
-              </div>
-            </>
-          )}
+          <TablaPedidosVendedor 
+            pedidos={pedidos} 
+            cargando={cargando} 
+            cambiarEstadoPedido={cambiarEstadoPedido} 
+          />
         </Card.Body>
       </Card>
+
+      <ModalSuscripcionVendedor 
+        show={showSubModal} 
+        onHide={() => setShowSubModal(false)} 
+        suscripcion={suscripcion} 
+        cancelando={cancelando} 
+        onTerminar={terminarSuscripcion} 
+      />
     </Container>
   );
 };
