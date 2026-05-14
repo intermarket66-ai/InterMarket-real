@@ -207,10 +207,7 @@ const Vendedor = () => {
 
   return (
     <Container>
-      <br />
-      <br />
-      <br />
-      <br />
+      
       <Row className="mb-4 align-items-center">
         <Col xs={8} md={9}>
           <h2 className="text-primary mb-0"><i className="bi bi-speedometer2 me-2"></i>Dashboard Vendedor</h2>

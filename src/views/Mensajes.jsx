@@ -45,7 +45,13 @@ const Mensajes = () => {
 
             const { data, error } = await supabase
                 .from("chats")
-                .select("*, productos(nombre_producto, imagen_url), mensajes(leido, emisor_id)")
+                .select(`
+                    *,
+                    comprador:perfiles!comprador_id(usuarios(username)),
+                    vendedor:perfiles!vendedor_id(usuarios(username)),
+                    productos(nombre_producto, imagen_url),
+                    mensajes(leido, emisor_id)
+                `)
                 .or(`comprador_id.eq.${miPerfilId},vendedor_id.eq.${miPerfilId}`)
                 .order("creado_en", { ascending: false });
 
@@ -72,12 +78,16 @@ const Mensajes = () => {
     const chatsFiltrados = useMemo(() => {
         if (!textoBusqueda.trim()) return chats;
         const valor = textoBusqueda.toLowerCase().trim();
-        return chats.filter((chat) =>
-            [chat.comprador_id, chat.vendedor_id, chat.id_producto]
-                .filter(Boolean)
-                .some((campo) => campo.toLowerCase().includes(valor))
-        );
-    }, [textoBusqueda, chats]);
+        return chats.filter((chat) => {
+            const nombreOtro = obtenerNombreOtro(chat).toLowerCase();
+            const nombreProducto = (chat.productos?.nombre_producto || "").toLowerCase();
+            const idChat = chat.id_chat.toLowerCase();
+            
+            return nombreOtro.includes(valor) || 
+                   nombreProducto.includes(valor) || 
+                   idChat.includes(valor);
+        });
+    }, [textoBusqueda, chats, miPerfilId]);
 
     const eliminarChat = async (idChat) => {
         try {
@@ -153,6 +163,14 @@ const Mensajes = () => {
         };
     }, [chatActivo]);
 
+    const obtenerNombreOtro = (chat) => {
+        if (!chat) return "Conversación";
+        if (chat.vendedor_id === miPerfilId) {
+            return chat.comprador?.usuarios?.username || "Comprador";
+        }
+        return chat.vendedor?.usuarios?.username || "Vendedor";
+    };
+
     const enviarMensaje = async () => {
         if (!chatActivo || !textoMensaje.trim() || !miPerfilId) return;
         
@@ -223,12 +241,12 @@ const Mensajes = () => {
                                         onClick={() => setChatActivo(chat)}
                                     >
                                         <div className="mensajes-avatar" style={{ backgroundColor: chatActivo?.id_chat === chat.id_chat ? 'var(--color-primario)' : '#94a3b8' }}>
-                                            {(chat.productos?.nombre_producto || "P").charAt(0).toUpperCase()}
+                                            {obtenerNombreOtro(chat).charAt(0).toUpperCase()}
                                         </div>
                                         <div className="mensajes-item-body">
                                             <div className="mensajes-item-top">
                                                 <strong className="text-truncate" style={{ maxWidth: '140px' }}>
-                                                    {chat.productos?.nombre_producto || "Chat de Producto"}
+                                                    {obtenerNombreOtro(chat)}
                                                 </strong>
                                                 <div className="d-flex flex-column align-items-end">
                                                     <small className="text-muted" style={{ fontSize: '0.65rem' }}>
@@ -274,11 +292,15 @@ const Mensajes = () => {
                             <>
                                 <header className="mensajes-chat-header shadow-sm">
                                     <div className="mensajes-avatar grande">
-                                        {(chatActivo.productos?.nombre_producto || "P").charAt(0).toUpperCase()}
+                                        {obtenerNombreOtro(chatActivo).charAt(0).toUpperCase()}
                                     </div>
                                     <div className="ms-3">
-                                        <h6 className="mb-0 fw-bold">{chatActivo.productos?.nombre_producto || "Conversación"}</h6>
-                                        <small className="text-muted">Chat ID: {chatActivo.id_chat.slice(0, 12)}</small>
+                                        <h6 className="mb-0 fw-bold">{obtenerNombreOtro(chatActivo)}</h6>
+                                        <div className="d-flex align-items-center gap-2">
+                                            <small className="text-muted">Producto: {chatActivo.productos?.nombre_producto || "No especificado"}</small>
+                                            <span className="text-muted" style={{ fontSize: '0.7rem' }}>•</span>
+                                            <small className="text-muted">ID: {chatActivo.id_chat.slice(0, 8)}</small>
+                                        </div>
                                     </div>
                                 </header>
 
